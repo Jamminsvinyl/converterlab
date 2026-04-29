@@ -14,7 +14,7 @@ export default function Home() {
   const handleConvert = (actionType = "default") => {
     setError(""); setOutput("");
     try {
-      if (!input.trim() && !["bpm-ms", "sample-rate", "freq-note", "pitch-shift"].includes(activeTab)) return;
+      if (!input.trim() && !["bpm-ms", "freq-note", "pitch-shift", "deg-rad", "hex-norm", "aspect-ratio"].includes(activeTab)) return;
 
       switch(activeTab) {
         case "json-csv":
@@ -50,47 +50,59 @@ export default function Home() {
           setOutput(input.replace(/^# (.*$)/gim, '<h1>$1</h1>').replace(/\*\*(.*)\*\*/gim, '<b>$1</b>'));
           break;
       }
-    } catch (e) { setError("Analysis failed. Check input format."); }
+    } catch (e) { setError("Analysis failed. Check input."); }
   };
 
-  const calculateMusic = (type, val) => {
+  const calculateLogic = (type, val) => {
     const v = parseFloat(val);
-    if (!v) return;
+    if (!v && v !== 0) return;
     switch(type) {
       case 'bpm':
         const ms = (60000 / v).toFixed(2);
-        setOutput(`1/4: ${ms}ms | 1/8: ${(ms/2).toFixed(2)}ms | 1/16: ${(ms/4).toFixed(2)}ms\nPre-Delay: ${(ms/32).toFixed(2)}ms`);
+        setOutput(`1/4: ${ms}ms | 1/8: ${(ms/2).toFixed(2)}ms | 1/16: ${(ms/4).toFixed(2)}ms`);
         break;
       case 'freq':
         const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         const h = 12 * (Math.log2(v / 440)) + 69;
-        const note = notes[Math.round(h) % 12];
-        const octave = Math.floor(Math.round(h) / 12) - 1;
-        setOutput(`Note: ${note}${octave} | MIDI: ${Math.round(h)}`);
+        setOutput(`Note: ${notes[Math.round(h) % 12]}${Math.floor(Math.round(h) / 12) - 1}`);
         break;
       case 'pitch':
         const shift = Math.pow(2, v / 12);
-        setOutput(`Frequency Multiplier: ${shift.toFixed(4)}x\nLength Change: ${(100/shift).toFixed(2)}%`);
+        setOutput(`Multiplier: ${shift.toFixed(4)}x | Length: ${(100/shift).toFixed(2)}%`);
         break;
-      case 'sample':
-        const size = (v * 16 * 2 * 60) / (8 * 1024 * 1024);
-        setOutput(`${v}Hz 16-bit Stereo (1 min) ≈ ${size.toFixed(2)} MB`);
+      case 'deg':
+        setOutput(`Radians: ${(v * (Math.PI / 180)).toFixed(6)} rad`);
+        break;
+      case 'aspect':
+        const gcd = (a, b) => b ? gcd(b, a % b) : a;
+        const w = parseInt(input), h_val = parseInt(val);
+        const common = gcd(w, h_val);
+        setOutput(`Ratio: ${w/common}:${h_val/common}`);
+        break;
+      case 'hex':
+        const r = parseInt(input.slice(1,3), 16) / 255;
+        const g = parseInt(input.slice(3,5), 16) / 255;
+        const b = parseInt(input.slice(5,7), 16) / 255;
+        setOutput(`Normalized: ${r.toFixed(3)}f, ${g.toFixed(3)}f, ${b.toFixed(3)}f`);
         break;
     }
   };
 
   const toolData = {
-    "json-csv": { name: "JSON to CSV", how: "Convert JSON arrays to CSV.", why: "Data integration." },
-    "curl-code": { name: "cURL to Code", how: "Turn cURL into Fetch API.", why: "Frontend speed." },
-    "jwt-decoder": { name: "JWT Decoder", how: "Decode tokens locally.", why: "Privacy focus." },
-    "base64": { name: "Base64 Tool", how: "Encode/Decode strings.", why: "Safe transmission." },
-    "sql-format": { name: "SQL Formatter", how: "Beautify SQL queries.", why: "Code clarity." },
-    "diff-checker": { name: "Diff Checker", how: "Compare two text blocks.", why: "Version control." },
-    "markdown": { name: "Markdown Preview", how: "Preview MD to HTML.", why: "Docs writing." },
-    "bpm-ms": { name: "BPM/Delay Calc", how: "BPM to milliseconds.", why: "Effect timing." },
-    "freq-note": { name: "Freq to Note", how: "Hz to Musical Note.", why: "Sound tuning." },
-    "pitch-shift": { name: "Pitch vs Time", how: "Semitone to speed ratio.", why: "Sampling & Vinyl." },
-    "sample-rate": { name: "Audio Size", how: "Calc digital audio weight.", why: "Storage planning." }
+    "json-csv": { name: "JSON to CSV", how: "Convert JSON to CSV.", why: "Data tasks." },
+    "curl-code": { name: "cURL to Code", how: "cURL to Fetch API.", why: "API testing." },
+    "jwt-decoder": { name: "JWT Decoder", how: "Decode JWT locally.", why: "Privacy." },
+    "base64": { name: "Base64 Tool", how: "Encode/Decode text.", why: "Data safety." },
+    "sql-format": { name: "SQL Formatter", how: "Format SQL queries.", why: "Readability." },
+    "diff-checker": { name: "Diff Checker", how: "Compare two texts.", why: "Version control." },
+    "markdown": { name: "Markdown Preview", how: "MD to HTML preview.", why: "Documentation." },
+    "bpm-ms": { name: "BPM/Delay Calc", how: "BPM to MS.", why: "Music timing." },
+    "freq-note": { name: "Freq to Note", how: "Hz to Music Note.", why: "Sound tuning." },
+    "pitch-shift": { name: "Pitch vs Time", how: "Semitone to speed.", why: "Sampling." },
+    "sample-rate": { name: "Audio Size", how: "Calc file weight.", why: "Storage." },
+    "deg-rad": { name: "Degrees to Rad", how: "Açıdan radyana.", why: "Game physics." },
+    "hex-norm": { name: "Color Normalizer", how: "Hex to 0.0-1.0.", why: "Shader coding." },
+    "aspect-ratio": { name: "Aspect Ratio", how: "Width & Height ratio.", why: "UI design." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -105,77 +117,62 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-200 font-sans relative">
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0">
-        <div className="p-6 border-b border-neutral-800"><h1 className="text-xl font-bold text-white">Converter<span className="text-emerald-500">Lab</span></h1></div>
+        <div className="p-6 border-b border-neutral-800"><h1 className="text-xl font-bold text-white tracking-tighter">Converter<span className="text-emerald-500">Lab</span></h1></div>
         <div className="flex-1 overflow-y-auto p-4">
           <NavGroup title="Developer Utilities" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music & Audio Lab" items={["bpm-ms", "freq-note", "pitch-shift", "sample-rate"]} />
+          <NavGroup title="Game Dev Lab" items={["deg-rad", "hex-norm", "aspect-ratio"]} />
         </div>
       </aside>
 
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-neutral-950 md:hidden overflow-y-auto p-6">
-          <div className="flex justify-between items-center mb-8 border-b border-neutral-800 pb-4">
-            <h1 className="text-xl font-bold text-white">Tools Menu</h1>
-            <button onClick={() => setIsMenuOpen(false)} className="text-emerald-500 text-xl">✕</button>
-          </div>
+        <div className="fixed inset-0 z-50 bg-neutral-950 md:hidden overflow-y-auto p-6 text-center">
+          <button onClick={() => setIsMenuOpen(false)} className="text-emerald-500 mb-8 font-bold">✕ CLOSE MENU</button>
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["bpm-ms", "freq-note", "pitch-shift", "sample-rate"]} />
+          <NavGroup title="Game Dev" items={["deg-rad", "hex-norm", "aspect-ratio"]} />
         </div>
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-900/30 sticky top-0 z-10 backdrop-blur-md">
-          <h1 className="text-lg font-bold text-white md:hidden">Converter<span className="text-emerald-500">Lab</span></h1>
+        <header className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-neutral-900/30 sticky top-0 z-10 backdrop-blur-md text-[10px] uppercase tracking-widest text-neutral-500 italic">
           <button onClick={() => setIsMenuOpen(true)} className="md:hidden text-emerald-500 font-bold border border-emerald-500/20 px-3 py-1 rounded">MENU</button>
-          <div className="hidden md:block text-[10px] text-neutral-700 uppercase italic">In the heart of analog, on the trace of the needle.</div>
+          <div className="hidden md:block">Analog heart, digital precision.</div>
+          <h1 className="md:hidden font-bold text-white">ConverterLab</h1>
         </header>
 
         <div className="p-4 md:p-12 max-w-5xl mx-auto w-full">
           <h2 className="text-3xl font-bold text-white mb-6">{toolData[activeTab].name}</h2>
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["bpm-ms", "freq-note", "pitch-shift", "sample-rate"].includes(activeTab) ? (
-              <div className="space-y-6">
-                <input type="number" step="any" placeholder="Enter value..." className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500 transition-colors" onChange={(e) => calculateMusic(activeTab.split('-')[0], e.target.value)} />
-                <pre className="p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-lg whitespace-pre-wrap">{output || "Waiting for input..."}</pre>
+            {["bpm-ms", "freq-note", "pitch-shift", "deg-rad", "hex-norm", "aspect-ratio"].includes(activeTab) ? (
+              <div className="space-y-4">
+                {activeTab === "aspect-ratio" && <input type="number" placeholder="Width..." className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl font-mono text-emerald-400 outline-none mb-2" onChange={(e) => setInput(e.target.value)} />}
+                {activeTab === "hex-norm" && <input type="text" placeholder="#FFFFFF" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl font-mono text-emerald-400 outline-none mb-2" onChange={(e) => setInput(e.target.value)} />}
+                <input type="number" step="any" placeholder={activeTab === "hex-norm" ? "Click Process" : "Enter value..."} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-3xl font-mono text-emerald-400 outline-none" onChange={(e) => calculateLogic(activeTab.split('-')[0], e.target.value)} />
+                <pre className="p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-lg">{output || "Waiting for input..."}</pre>
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input} onChange={(e) => setInput(e.target.value)} placeholder={activeTab === "diff-checker" ? "Original text..." : "Input..."} />
-                  {activeTab === "diff-checker" ? (
-                    <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input2} onChange={(e) => setInput2(e.target.value)} placeholder="Modified text..." />
-                  ) : (
-                    <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" value={output} readOnly placeholder="Output..." />
-                  )}
+                  <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input..." />
+                  {activeTab === "diff-checker" ? <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input2} onChange={(e) => setInput2(e.target.value)} placeholder="Compare..." /> : <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" value={output} readOnly placeholder="Output..." />}
                 </div>
-                {activeTab === "diff-checker" && <pre className="w-full p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono mt-4 overflow-x-auto text-xs">{output}</pre>}
+                {activeTab === "diff-checker" && <pre className="w-full p-4 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono mt-4 text-xs overflow-x-auto">{output}</pre>}
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <button onClick={() => handleConvert(activeTab === "base64" ? "encode" : "default")} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all">PROCESS</button>
-                  {activeTab === "base64" && <button onClick={() => handleConvert("decode")} className="px-8 py-3 border border-emerald-600 text-emerald-500 rounded-xl">DECODE</button>}
+                  <button onClick={() => activeTab === "hex-norm" ? calculateLogic('hex', '0') : handleConvert()} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all">PROCESS</button>
+                  {output && <button onClick={() => navigator.clipboard.writeText(output)} className="ml-auto text-xs text-neutral-500 underline">Copy</button>}
                 </div>
               </>
             )}
           </div>
-          
           <div className="grid md:grid-cols-2 gap-6 text-sm mb-12">
-            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50">
-              <h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">How to use</h3>
-              <p className="text-neutral-400 leading-relaxed italic">{toolData[activeTab].how}</p>
-            </div>
-            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50">
-              <h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">Why it matters</h3>
-              <p className="text-neutral-400 leading-relaxed italic">{toolData[activeTab].why}</p>
-            </div>
+            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50"><h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">How to use</h3><p className="text-neutral-400 italic">{toolData[activeTab].how}</p></div>
+            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50"><h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">Why it matters</h3><p className="text-neutral-400 italic">{toolData[activeTab].why}</p></div>
           </div>
         </div>
-
-        <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto bg-neutral-900/20">
-          <div>© 2026 ConverterLab.io - Built for Precision</div>
-          <div className="flex gap-4">
-            <a href="/privacy" className="hover:text-emerald-500">Privacy Policy</a>
-            <a href="/terms" className="hover:text-emerald-500">Terms of Service</a>
-            <a href="mailto:hello@converterlab.io" className="hover:text-emerald-500 transition-colors">Contact</a>
-          </div>
+        <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto">
+          <div>© 2026 ConverterLab.io - Precision for Devs & Producers</div>
+          <div className="flex gap-4"><a href="/privacy" className="hover:text-emerald-500">Privacy</a><a href="/terms" className="hover:text-emerald-500">Terms</a><a href="mailto:hello@converterlab.io" className="hover:text-emerald-500">Contact</a></div>
         </footer>
       </main>
     </div>
