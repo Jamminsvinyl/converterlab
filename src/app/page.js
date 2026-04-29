@@ -25,7 +25,6 @@ export default function Home() {
     
     else if (activeTab === "curl-code") {
       try {
-        // Basit bir cURL parser mantığı
         const urlMatch = input.match(/curl\s+["']?([^"'\s]+)["']?/);
         if (!urlMatch) throw new Error("Invalid cURL command.");
         
@@ -67,8 +66,8 @@ export default function Home() {
 
       <main className="flex-1 flex flex-col">
         {/* ADSENSE PLACEHOLDER: TOP BANNER */}
-        <div className="w-full h-20 bg-neutral-900 border-b border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-          AdSpace - Leaderboard
+        <div className="w-full h-20 bg-neutral-900 border-b border-neutral-800 flex items-center justify-center text-xs text-neutral-600 text-center">
+          AdSpace - Leaderboard (728x90)
         </div>
 
         <div className="p-8 flex-1 overflow-y-auto">
@@ -104,11 +103,13 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="border-t border-neutral-800 p-6 text-sm text-neutral-600 flex justify-between px-12 bg-black/20">
-          <div>© 2026 ConverterLab.io</div>
+        {/* GÜNCELLENMİŞ FOOTER */}
+        <footer className="border-t border-neutral-800 p-6 text-xs text-neutral-500 flex flex-col md:flex-row justify-between items-center px-12 bg-black/20 gap-4">
+          <div>© 2026 ConverterLab.io - Precision Tools for Devs & Music Pros</div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-emerald-500">Privacy</a>
-            <a href="#" className="hover:text-emerald-500">Terms</a>
+            <a href="/privacy" className="hover:text-emerald-500 transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-emerald-500 transition-colors">Terms of Service</a>
+            <a href="mailto:hello@converterlab.io" className="hover:text-emerald-500 transition-colors">Contact</a>
           </div>
         </footer>
       </main>
