@@ -1,5 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css"; // Tasarımı geri getiren hayati satır!
+import "./globals.css"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -11,33 +11,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Senin hazırladığın profesyonel metadatalar:
 export const metadata = {
   metadataBase: new URL('https://converterlab.io'),
-  title: "ConverterLab | 22+ Private Tools for Devs, Producers & Game Creators",
-  description: "100% browser-side, secure tool station. JSON to CSV, JWT Decoder, BPM Calc, Room Treatment, and Game Dev utilities. No data ever leaves your computer.",
-  keywords: "JSON to CSV, JWT Decoder, BPM Calculator, Room Treatment Calc, Game Dev Tools, SQL Formatter, Statistics Calculator, Music Theory Tools",
+  title: "ConverterLab | 23+ Private Tools for Devs, Producers & Game Creators",
+  description: "100% browser-side, secure tool station. No data ever leaves your computer.",
   openGraph: {
     title: "ConverterLab - The Analog Heart of Digital Tools",
-    description: "Fast, private, and secure developer and music production utilities.",
     url: "https://converterlab.io",
     siteName: "ConverterLab",
-    locale: "en_US",
     type: "website",
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ConverterLab | Private Dev & Music Station",
-    description: "Zero-server processing. Your data stays private.",
-    images: ['/og-image.png'],
   },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-200">
+      <body className="bg-neutral-950 text-neutral-200 min-h-full flex flex-col">
         {children}
       </body>
     </html>
