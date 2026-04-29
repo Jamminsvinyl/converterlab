@@ -7,14 +7,14 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
+  const [bpm, setBpm] = useState(120);
 
   const handleConvert = (actionType = "default") => {
     setError("");
     setOutput("");
-    if (!input.trim()) return;
-
     try {
-      // 1. JSON to CSV
+      if (!input.trim() && activeTab !== "bpm-ms") return;
+
       if (activeTab === "json-csv") {
         let data = JSON.parse(input);
         if (!Array.isArray(data)) data = [data];
@@ -22,161 +22,114 @@ export default function Home() {
         const rows = [headers.join(","), ...data.map(row => headers.map(h => `"${String(row[h] || '').replace(/"/g, '""')}"`).join(","))];
         setOutput(rows.join("\n"));
       } 
-      
-      // 2. cURL to Code
       else if (activeTab === "curl-code") {
         const urlMatch = input.match(/curl\s+["']?([^"'\s]+)["']?/);
-        if (!urlMatch) throw new Error("Invalid cURL command. Make sure it starts with 'curl'.");
-        
-        const methodMatch = input.match(/-X\s+(\w+)/) || input.match(/--request\s+(\w+)/);
-        const method = methodMatch ? methodMatch[1] : (input.includes("--data") ? "POST" : "GET");
-        
-        const jsCode = `fetch("${urlMatch[1]}", {
-  method: "${method}",
-  headers: {
-    "Content-Type": "application/json"
-  }
-}).then(res => res.json())
-  .then(data => console.log(data));`;
-        
-        setOutput(jsCode);
+        if (!urlMatch) throw new Error("Invalid cURL. Start with 'curl'");
+        setOutput(`fetch("${urlMatch[1]}").then(r => r.json()).then(console.log);`);
       }
-
-      // 3. JWT Decoder
       else if (activeTab === "jwt-decoder") {
         const parts = input.split('.');
-        if (parts.length !== 3) throw new Error("Invalid JWT format. A valid JWT has 3 parts separated by dots.");
-        
-        const decodeBase64Url = (str) => {
-          str = str.replace(/-/g, '+').replace(/_/g, '/');
-          return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        };
-
-        const header = JSON.parse(decodeBase64Url(parts[0]));
-        const payload = JSON.parse(decodeBase64Url(parts[1]));
-        
-        setOutput(JSON.stringify({ header, payload }, null, 2));
+        if (parts.length !== 3) throw new Error("Invalid JWT.");
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        setOutput(JSON.stringify(payload, null, 2));
       }
-
-      // 4. Base64 Encode / Decode
       else if (activeTab === "base64") {
-        if (actionType === "encode") {
-          setOutput(btoa(unescape(encodeURIComponent(input))));
-        } else if (actionType === "decode") {
-          setOutput(decodeURIComponent(escape(atob(input))));
-        }
+        setOutput(actionType === "encode" ? btoa(input) : atob(input));
       }
-    } catch (e) { 
-      setError(e.message || "An error occurred. Please check your input format."); 
-    }
+      else if (activeTab === "sql-format") {
+        const keywords = ["SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE", "JOIN", "LEFT JOIN", "GROUP BY", "ORDER BY"];
+        let formatted = input.replace(/\s+/g, " ");
+        keywords.forEach(key => formatted = formatted.replace(new RegExp(` ${key} `, "gi"), `\n${key} `));
+        setOutput(formatted.trim());
+      }
+      else if (activeTab === "cron-gen") {
+        setOutput("0 0 * * * (Example: Every day at midnight)");
+      }
+    } catch (e) { setError("Format error. Please check your input."); }
   };
 
-  // Dinamik Başlık ve Açıklamalar
-  const tabInfo = {
-    "json-csv": { title: "JSON to CSV", desc: "Instantly transform your JSON arrays into clean CSV files." },
-    "curl-code": { title: "cURL to JavaScript", desc: "Convert cURL commands to Fetch API instantly." },
-    "jwt-decoder": { title: "JWT Decoder", desc: "Decode JSON Web Tokens (JWT) securely in your browser." },
-    "base64": { title: "Base64 Encoder / Decoder", desc: "Encode text to Base64 or decode Base64 strings back to text." }
+  // Music Lab Calculation
+  const calculateBpm = (val) => {
+    setBpm(val);
+    const ms = (60000 / val).toFixed(2);
+    setOutput(`1/4 Note (Quarter): ${ms} ms\n1/8 Note (Eighth): ${(ms/2).toFixed(2)} ms\n1/16 Note (Sixteenth): ${(ms/4).toFixed(2)} ms`);
+  };
+
+  const tabs = {
+    "dev": [
+      { id: "json-csv", name: "JSON to CSV" },
+      { id: "curl-code", name: "cURL to Code" },
+      { id: "jwt-decoder", name: "JWT Decoder" },
+      { id: "base64", name: "Base64 Tool" },
+      { id: "sql-format", name: "SQL Formatter" },
+      { id: "cron-gen", name: "Cron Generator" }
+    ],
+    "music": [
+      { id: "bpm-ms", name: "BPM to MS" }
+    ]
   };
 
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-200 font-sans">
-      
-      {/* SIDEBAR */}
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col">
         <div className="p-6 border-b border-neutral-800">
-          <h1 className="text-xl font-bold text-white tracking-tight">Converter<span className="text-emerald-500">Lab</span></h1>
+          <h1 className="text-xl font-bold text-white">Converter<span className="text-emerald-500">Lab</span></h1>
         </div>
-        <nav className="flex-1 p-4 space-y-1 text-sm overflow-y-auto">
-          
-          <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-3 mt-2 px-4">Developer Tools</div>
-          
-          {Object.keys(tabInfo).map(tabKey => (
-            <button key={tabKey} onClick={() => { setActiveTab(tabKey); setInput(""); setOutput(""); setError(""); }} 
-              className={`w-full text-left px-4 py-2 rounded-lg transition-all ${activeTab === tabKey ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'}`}>
-              {tabInfo[tabKey].title.split(' ')[0]} {/* Sadece ilk kelimeler menüde temiz dursun diye kısa tutabiliriz, ama şimdilik tam isim daha iyi */}
-              {tabKey === 'json-csv' ? 'JSON to CSV' : tabKey === 'curl-code' ? 'cURL to Code' : tabKey === 'jwt-decoder' ? 'JWT Decoder' : 'Base64 Tool'}
-            </button>
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <div className="text-[10px] font-bold text-neutral-600 uppercase mb-2 px-4 tracking-tighter">Developer Tools</div>
+          {tabs.dev.map(t => (
+            <button key={t.id} onClick={() => {setActiveTab(t.id); setInput(""); setOutput("");}} className={`w-full text-left px-4 py-2 rounded-lg text-sm transition ${activeTab === t.id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800'}`}>{t.name}</button>
           ))}
-
-          <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-3 mt-8 px-4">Music Lab</div>
-          <button disabled className="w-full text-left px-4 py-2 text-neutral-600 italic cursor-not-allowed">BPM to MS (Coming Soon)</button>
-          
+          <div className="text-[10px] font-bold text-neutral-600 uppercase mb-2 mt-6 px-4 tracking-tighter">Music Lab</div>
+          {tabs.music.map(t => (
+            <button key={t.id} onClick={() => {setActiveTab(t.id); setInput(""); setOutput("");}} className={`w-full text-left px-4 py-2 rounded-lg text-sm transition ${activeTab === t.id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800'}`}>{t.name}</button>
+          ))}
         </nav>
-        
-        {/* ADSENSE PLACEHOLDER: SIDEBAR */}
-        <div className="m-4 p-4 h-64 bg-neutral-800/20 border border-dashed border-neutral-700/50 rounded-lg flex items-center justify-center text-xs text-neutral-600">
-          AdSpace - Sidebar
-        </div>
+        <div className="m-4 p-4 h-48 bg-neutral-800/10 border border-dashed border-neutral-800 rounded flex items-center justify-center text-[10px] text-neutral-700 text-center uppercase tracking-widest">AdSpace Sidebar</div>
       </aside>
 
       <main className="flex-1 flex flex-col">
-        {/* ADSENSE PLACEHOLDER: TOP BANNER */}
-        <div className="w-full h-20 bg-neutral-900/50 border-b border-neutral-800 flex items-center justify-center text-xs text-neutral-600">
-          AdSpace - Leaderboard (728x90)
-        </div>
-
-        <div className="p-8 flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-2">{tabInfo[activeTab].title}</h2>
-            <p className="text-neutral-400 mb-8">{tabInfo[activeTab].desc}</p>
-
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-2xl">
-              {error && <div className="mb-4 bg-red-950/30 border border-red-900/50 text-red-400 p-3 rounded-lg text-sm">{error}</div>}
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-neutral-500 uppercase">Input</label>
-                  <textarea 
-                    className="w-full h-80 bg-neutral-950 border border-neutral-800 rounded-lg p-4 text-sm font-mono focus:border-emerald-500 outline-none transition-colors" 
-                    value={input} 
-                    onChange={(e) => setInput(e.target.value)} 
-                    placeholder="Paste your data here..." 
-                    spellCheck="false"
-                  />
+        <div className="w-full h-20 border-b border-neutral-800 flex items-center justify-center text-[10px] text-neutral-700 uppercase tracking-[0.2em]">AdSpace Top Banner</div>
+        <div className="p-8 flex-1">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-6 capitalize">{activeTab.replace('-', ' ')}</h2>
+            
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
+              {activeTab === "bpm-ms" ? (
+                <div className="space-y-6">
+                  <label className="block text-sm font-medium text-neutral-400">Enter BPM (Tempo)</label>
+                  <input type="number" value={bpm} onChange={(e) => calculateBpm(e.target.value)} className="w-full bg-black border border-neutral-800 rounded-lg p-4 text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" />
+                  <pre className="p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono">{output || "Calculation will appear here..."}</pre>
                 </div>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-neutral-500 uppercase">Output</label>
-                  <textarea 
-                    className="w-full h-80 bg-neutral-950 border border-neutral-800 rounded-lg p-4 text-sm font-mono text-emerald-400 outline-none" 
-                    value={output} 
-                    readOnly 
-                    placeholder="Result will appear here..." 
-                    spellCheck="false"
-                  />
-                </div>
-              </div>
-
-              {/* ADSENSE PLACEHOLDER: ABOVE BUTTON */}
-              <div className="my-6 h-12 bg-neutral-800/10 border border-dashed border-neutral-800/50 rounded flex items-center justify-center text-[10px] text-neutral-600">
-                In-Feed Ad Placeholder
-              </div>
-
-              <div className="mt-2 flex items-center gap-4">
-                {/* EĞER TAB BASE64 İSE İKİ BUTON GÖSTER, DEĞİLSE TEK BUTON */}
-                {activeTab === "base64" ? (
-                  <>
-                    <button onClick={() => handleConvert('encode')} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-900/20">Encode Base64</button>
-                    <button onClick={() => handleConvert('decode')} className="px-8 py-3 border border-emerald-600/50 text-emerald-500 hover:bg-emerald-600/10 font-bold rounded-lg transition-all active:scale-95">Decode Base64</button>
-                  </>
-                ) : (
-                  <button onClick={() => handleConvert()} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-900/20">Convert Now</button>
-                )}
-                
-                {output && <button onClick={() => navigator.clipboard.writeText(output)} className="ml-auto px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium">Copy to Clipboard</button>}
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <textarea className="h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input goes here..." />
+                    <textarea className="h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" value={output} readOnly placeholder="Output..." />
+                  </div>
+                  <div className="mt-6 flex gap-3 items-center">
+                    {activeTab === "base64" ? (
+                      <>
+                        <button onClick={() => handleConvert("encode")} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95">Encode</button>
+                        <button onClick={() => handleConvert("decode")} className="px-6 py-2 border border-emerald-600 text-emerald-500 rounded-lg">Decode</button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleConvert()} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95">Run Tool</button>
+                    )}
+                    {output && <button onClick={() => navigator.clipboard.writeText(output)} className="ml-auto text-xs text-neutral-500 hover:text-white underline">Copy to Clipboard</button>}
+                  </div>
+                </>
+              )}
             </div>
+            <div className="mt-8 h-12 border border-dashed border-neutral-800 rounded flex items-center justify-center text-[10px] text-neutral-700 uppercase tracking-widest">In-Feed Advertisement</div>
           </div>
         </div>
-
-        {/* FOOTER */}
-        <footer className="border-t border-neutral-800 p-6 text-xs text-neutral-500 flex flex-col md:flex-row justify-between items-center px-12 bg-black/20 gap-4">
-          <div>© 2026 ConverterLab.io - Precision Tools for Devs & Music Pros</div>
-          <div className="flex gap-6">
-            <a href="/privacy" className="hover:text-emerald-500 transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-emerald-500 transition-colors">Terms of Service</a>
-            <a href="mailto:hello@converterlab.io" className="hover:text-emerald-500 transition-colors">Contact</a>
+        <footer className="p-6 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-600 px-12">
+          <div>© 2026 ConverterLab.io</div>
+          <div className="flex gap-4">
+            <a href="/privacy" className="hover:text-emerald-500">Privacy</a>
+            <a href="/terms" className="hover:text-emerald-500">Terms</a>
+            <a href="mailto:hello@converterlab.io" className="hover:text-emerald-500">Contact</a>
           </div>
         </footer>
       </main>
