@@ -23,7 +23,7 @@ export default function Home() {
         const median = nums.length % 2 === 0 ? (nums[nums.length/2 - 1] + nums[nums.length/2]) / 2 : nums[Math.floor(nums.length/2)];
         const variance = nums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / nums.length;
         const stdDev = Math.sqrt(variance);
-        setOutput(`Count: ${nums.length} items\nMean (Avg): ${mean.toFixed(2)}\nMedian (Middle): ${median}\nMin/Max: ${nums[0]} / ${nums[nums.length-1]}\nStd Deviation: ${stdDev.toFixed(2)}`);
+        setOutput(`Count: ${nums.length} items\nMean: ${mean.toFixed(2)}\nMedian: ${median}\nStd Dev: ${stdDev.toFixed(2)}`);
         break;
       case 'circle':
         const idx = keys.indexOf(input.toUpperCase());
@@ -40,11 +40,20 @@ export default function Home() {
       case 'acoustic':
         const w = parseFloat(input), l = parseFloat(input2), h_v = parseFloat(input3);
         const s = 2 * (w * l + l * h_v + w * h_v);
-        setOutput(`Surface: ${s.toFixed(1)} m²\n- Absorp: ${(s * 0.18).toFixed(1)} m²\n- Diffus: ${(s * 0.07).toFixed(1)} m²`);
+        setOutput(`Surface Area: ${s.toFixed(1)} m²\n- Absorption: ${(s * 0.18).toFixed(1)} m²\n- Diffusion: ${(s * 0.07).toFixed(1)} m²`);
         break;
       case 'bpm':
         const ms = (60000 / parseFloat(inputVal)).toFixed(2);
         setOutput(`1/4: ${ms}ms | 1/8: ${(ms/2).toFixed(2)}ms`);
+        break;
+      case 'freq':
+        const hz = parseFloat(inputVal);
+        if(!hz || hz <= 0) return;
+        const midi = 12 * (Math.log2(hz / 440)) + 69;
+        const roundedMidi = Math.round(midi);
+        const exactFreq = 440 * Math.pow(2, (roundedMidi - 69) / 12);
+        const cents = Math.round(1200 * Math.log2(hz / exactFreq));
+        setOutput(`Note: ${keys[roundedMidi % 12]}${Math.floor(roundedMidi / 12) - 1}\nDetune: ${cents > 0 ? '+' : ''}${cents} cents`);
         break;
       default: break;
     }
@@ -58,15 +67,11 @@ export default function Home() {
     "sql-format": { name: "SQL Formatter", how: "Beautify queries.", why: "Clarity." },
     "diff-checker": { name: "Diff Checker", how: "Compare two texts.", why: "Versions." },
     "markdown": { name: "Markdown Pre", how: "MD to HTML preview.", why: "Documentation." },
-    "stats-calc": { 
-        name: "Basic Statistics", 
-        how: "Paste numbers separated by commas, spaces, or lines. (e.g., 10, 20.5, 30)", 
-        why: "Mean (Avg) shows the overall level, Median shows the true middle (ignoring extremes), and Std Dev shows how much your data varies/spreads." 
-    },
-    "circle-fifths": { name: "Circle of Fifths", how: "Enter Key (e.g., C).", why: "Harmony & Mixing." },
-    "harmonics-calc": { name: "Upper Harmonics", how: "Enter Freq (Hz).", why: "Analog Warmth." },
+    "stats-calc": { name: "Basic Statistics", how: "Paste numbers (10, 20...)", why: "Mean, Median, and Std Dev analysis." },
+    "circle-fifths": { name: "Circle of Fifths", how: "Enter Key (C).", why: "Harmony & Mixing." },
+    "harmonics-calc": { name: "Upper Harmonics", how: "Enter Hz.", why: "Analog Warmth." },
     "bpm-ms": { name: "BPM/Delay Calc", how: "BPM to timing.", why: "Effect precision." },
-    "freq-note": { name: "Freq to Note", how: "Hz to Music Note.", why: "Sound tuning." },
+    "freq-note": { name: "Freq to Note Analyzer", how: "Enter Hz.", why: "Tuning kick drums." },
     "acoustic-calc": { name: "Room Treatment", how: "Enter Room Dim (m).", why: "Studio acoustics." },
     "deg-rad": { name: "Degrees to Rad", how: "Angle to Radians.", why: "Game physics." },
     "hex-norm": { name: "Color Norm", how: "Hex to 0.0-1.0.", why: "Shader coding." },
@@ -85,7 +90,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-200 font-sans selection:bg-emerald-500/30">
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0 px-4">
-        <div className="py-8 px-4 border-b border-neutral-800 mb-4"><h1 className="text-xl font-bold text-white tracking-tighter">Converter<span className="text-emerald-500">Lab</span></h1></div>
+        <div className="py-8 px-4 border-b border-neutral-800 mb-4"><h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1></div>
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
           <NavGroup title="Dev Utilities" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Data & Stats Lab" items={["stats-calc"]} />
@@ -119,7 +124,7 @@ export default function Home() {
             {["stats-calc", "circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "deg-rad", "hex-norm", "aspect-ratio", "acoustic-calc"].includes(activeTab) ? (
               <div className="space-y-4">
                 {activeTab === "stats-calc" ? (
-                  <textarea className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500 transition-colors" placeholder="Example: 12, 45.2, 67, 23..." value={input} onChange={(e) => setInput(e.target.value)} />
+                  <textarea className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none h-32" placeholder="12, 45, 67..." value={input} onChange={(e) => setInput(e.target.value)} />
                 ) : activeTab === "acoustic-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <input type="number" placeholder="W (m)" className="bg-black border border-neutral-800 rounded-xl p-4 text-xl font-mono text-emerald-400 outline-none" onChange={(e) => setInput(e.target.value)} />
@@ -127,15 +132,14 @@ export default function Home() {
                     <input type="number" placeholder="H (m)" className="bg-black border border-neutral-800 rounded-xl p-4 text-xl font-mono text-emerald-400 outline-none" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : (
-                  <input type="text" placeholder="Enter value..." className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-3xl font-mono text-emerald-400 outline-none" onChange={(e) => setInput(e.target.value)} />
+                  <input type="text" placeholder="Value..." className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-3xl font-mono text-emerald-400 outline-none" onChange={(e) => setInput(e.target.value)} />
                 )}
-                
-                <button onClick={() => calculateLogic(activeTab.split('-')[0], input)} className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20">PROCESS DATA</button>
-                <pre className="p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-lg whitespace-pre-wrap shadow-inner">{output || "Awaiting input..."}</pre>
+                <button onClick={() => calculateLogic(activeTab.split('-')[0], input)} className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all">PROCESS DATA</button>
+                <pre className="p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-lg whitespace-pre-wrap">{output || "Waiting..."}</pre>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500 transition-colors" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input..." />
+                <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Input..." />
                 <textarea className="h-64 md:h-80 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" value={output} readOnly placeholder="Output..." />
               </div>
             )}
@@ -155,7 +159,7 @@ export default function Home() {
         
         <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto">
           <div>© 2026 ConverterLab.io - Precision Tools by Cem Ülkü</div>
-          <div className="flex gap-4"><a href="/privacy" className="hover:text-emerald-500 transition-colors">Privacy Policy</a><a href="/terms" className="hover:text-emerald-500 transition-colors">Terms of Service</a></div>
+          <div className="flex gap-4"><a href="/privacy" className="hover:text-emerald-500">Privacy Policy</a><a href="/terms" className="hover:text-emerald-500">Terms of Service</a></div>
         </footer>
       </main>
     </div>
