@@ -11,7 +11,7 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [exchangeRates, setExchangeRates] = useState({ TRY: 33.0, EUR: 0.93, GBP: 0.79, USD: 1 });
 
-  // ✈️ TRAVEL EXPENSE İÇİN ÖZEL HAFIZA (Diğer araçlarla karışmaması için)
+  // ✈️ TRAVEL EXPENSE HAFIZASI
   const [travelForm, setTravelForm] = useState({
     destVal: "1.0", destName: "Global Average", days: "1", hotel: "1", food: "70", transport: "15", currency: "USD"
   });
@@ -51,47 +51,29 @@ export default function Home() {
     
     switch(type) {
       case 'travel':
-        // Algoritma: Şehir Endeksi * ((Otel x Yıldız) + Yemek + Ulaşım) * Gün Sayısı * Güvenlik Payı
         const tDays = parseInt(travelForm.days) || 1;
         const tIndex = parseFloat(travelForm.destVal);
-        const tHotelBase = 80; // Gecelik 3 yıldız taban fiyat (USD)
         const tHotelMult = parseFloat(travelForm.hotel);
         const tFood = parseFloat(travelForm.food);
         const tTransport = parseFloat(travelForm.transport);
         
-        const dailyUSD = ((tHotelBase * tHotelMult) + tFood + tTransport) * tIndex;
+        const dailyUSD = ((80 * tHotelMult) + tFood + tTransport) * tIndex;
         const totalUSD = dailyUSD * tDays;
-        const bufferTotalUSD = totalUSD * 1.10; // %10 şirket/güvenlik payı eklendi
+        const bufferTotalUSD = totalUSD * 1.10; // %10 güvenlik payı
         
         const rate = exchangeRates[travelForm.currency] || 1;
-        const finalPrice = bufferTotalUSD * rate;
-        
         const formatCurr = (amt, c) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: c }).format(amt);
         
         let hotelLabel = tHotelMult === 3.5 ? "5★ Executive" : tHotelMult === 1.8 ? "4★ Business" : "3★ Economy";
-        let foodLabel = tFood === 150 ? "Fine Dining" : tFood === 70 ? "Medium/Standard" : "Budget/Fast";
+        let foodLabel = tFood === 150 ? "Fine Dining" : tFood === 70 ? "Medium" : "Budget/Fast";
         let transLabel = tTransport === 70 ? "Rent a Car" : tTransport === 50 ? "Taxi/Uber" : "Public Transport";
 
-        setOutput(
-          `✈️ CORPORATE TRAVEL EXPENSE REPORT\n` +
-          `==========================================\n` +
-          `Location      : ${travelForm.destName}\n` +
-          `Duration      : ${tDays} Days\n` +
-          `Accommodation : ${hotelLabel}\n` +
-          `Daily Food    : ${foodLabel}\n` +
-          `Logistics     : ${transLabel}\n` +
-          `------------------------------------------\n` +
-          `💰 ESTIMATED BUDGET: ${formatCurr(finalPrice, travelForm.currency)}\n` +
-          `------------------------------------------\n` +
-          `Avg Daily Cost: ${formatCurr((dailyUSD * 1.10) * rate, travelForm.currency)}\n` +
-          `Live Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n` +
-          `*Note: A 10% safety/buffer margin is included in the total.`
-        );
+        setOutput(`✈️ CORPORATE TRAVEL EXPENSE REPORT\n==========================================\nLocation      : ${travelForm.destName}\nDuration      : ${tDays} Days\nAccommodation : ${hotelLabel}\nDaily Food    : ${foodLabel}\nLogistics     : ${transLabel}\n------------------------------------------\n💰 ESTIMATED BUDGET: ${formatCurr(bufferTotalUSD * rate, travelForm.currency)}\n------------------------------------------\nAvg Daily Cost: ${formatCurr((dailyUSD * 1.10) * rate, travelForm.currency)}\nLive Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n*Includes 10% safety margin.`);
         break;
 
       case 'stats':
         const nums = inputVal.split(/[, \s\n]+/).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
-        if(nums.length === 0) { setOutput("Lütfen geçerli sayılar girin."); return; }
+        if(nums.length === 0) { setOutput("Please enter valid numbers."); return; }
         const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
         const median = nums.length % 2 === 0 ? (nums[nums.length/2 - 1] + nums[nums.length/2]) / 2 : nums[Math.floor(nums.length/2)];
         const stdDev = Math.sqrt(nums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / nums.length);
@@ -125,6 +107,31 @@ export default function Home() {
         if(cIdx === -1) return;
         setOutput(`Key: ${input.toUpperCase()} Major\n- 4th: ${keys[(cIdx + 5) % 12]}\n- 5th: ${keys[(cIdx + 7) % 12]}\n- Minor: ${keys[(cIdx + 9) % 12]}m`);
         break;
+        
+      case 'harmonics':
+        const v = parseFloat(inputVal);
+        if(!v) return;
+        let hList = `Fundamental: ${v} Hz\n`;
+        for(let i=2; i<=6; i++) hList += `${i}. Harmonic: ${(v * i).toFixed(1)} Hz\n`;
+        setOutput(hList);
+        break;
+
+      case 'deg':
+        const deg = parseFloat(inputVal);
+        if(isNaN(deg)) { setOutput("Please enter a valid angle."); return; }
+        setOutput(`${deg} Degrees = ${(deg * Math.PI / 180).toFixed(4)} Radians`);
+        break;
+
+      case 'aspect':
+        const numsAspect = inputVal.split(/[, \s\nxX]+/).map(Number).filter(n => !isNaN(n));
+        if(numsAspect.length === 2) {
+            const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+            const divisor = gcd(numsAspect[0], numsAspect[1]);
+            setOutput(`Resolution: ${numsAspect[0]} x ${numsAspect[1]}\nAspect Ratio: ${numsAspect[0]/divisor}:${numsAspect[1]/divisor}`);
+        } else {
+            setOutput("Format: Width Height (e.g. 1920 1080)");
+        }
+        break;
 
       default: 
         setOutput("Ready to process..."); 
@@ -134,7 +141,7 @@ export default function Home() {
 
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select destination, duration, and preferences.", why: "Corporate grade travel budget estimations." },
-    "stats-calc": { name: "Statistics Engine", how: "Numbers (10, 20...)", why: "Data balancing & analysis." },
+    "stats-calc": { name: "Statistics Engine", how: "Numbers (e.g. 10, 20...)", why: "Data balancing & analysis." },
     "json-csv": { name: "JSON to CSV", how: "Paste JSON array.", why: "Data integration." },
     "curl-code": { name: "cURL to Code", how: "Paste cURL request.", why: "API testing." },
     "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT.", why: "Privacy-focused token decoding." },
@@ -142,13 +149,13 @@ export default function Home() {
     "sql-format": { name: "SQL Formatter", how: "Paste raw SQL.", why: "Query readability." },
     "diff-checker": { name: "Diff Checker", how: "Paste two texts.", why: "Version control comparison." },
     "markdown": { name: "Markdown Preview", how: "Write MD text.", why: "Documentation rendering." },
-    "circle-fifths": { name: "Circle of Fifths", how: "Enter Key (C).", why: "Harmony planning." },
+    "circle-fifths": { name: "Circle of Fifths", how: "Enter Key (e.g. C).", why: "Harmony planning." },
     "harmonics-calc": { name: "Upper Harmonics", how: "Enter Hz.", why: "Analog warmth synthesis." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter BPM.", why: "Precise effect timing." },
     "freq-note": { name: "Freq to Note", how: "Enter Hz.", why: "Synth tuning & acoustics." },
     "acoustic-calc": { name: "Room Treatment", how: "W, L, H (m).", why: "Studio acoustic planning." },
-    "deg-rad": { name: "Degrees to Rad", how: "Enter Angle.", why: "Game physics math." },
-    "aspect-ratio": { name: "Aspect Ratio", how: "W & H.", why: "UI/UX Design matching." }
+    "deg-rad": { name: "Degrees to Rad", how: "Enter Angle (e.g. 180).", why: "Game physics math." },
+    "aspect-ratio": { name: "Aspect Ratio", how: "Enter W & H (e.g. 1920 1080).", why: "UI/UX Design matching." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -204,72 +211,44 @@ export default function Home() {
             {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "deg-rad", "aspect-ratio"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* ✈️ TRAVEL ENGINE UI - YEPYENİ TASARIM */}
+                {/* ✈️ TRAVEL ENGINE UI */}
                 {activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Destination */}
-                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" 
-                      onChange={(e) => {
-                        const selected = destinations.find(d => d.val === e.target.value);
-                        setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name});
-                      }}>
+                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
                       {destinations.map(d => <option key={d.name} value={d.val}>{d.name}</option>)}
                     </select>
-
-                    {/* Days */}
                     <div className="flex border border-neutral-800 rounded-xl bg-black overflow-hidden focus-within:border-emerald-500">
                       <span className="p-4 text-neutral-500 text-sm flex items-center bg-neutral-900/50">Days</span>
                       <input type="number" min="1" className="w-full bg-transparent p-4 text-base font-mono text-emerald-400 outline-none" value={travelForm.days} onChange={(e) => setTravelForm({...travelForm, days: e.target.value})} />
                     </div>
-
-                    {/* Currency */}
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, currency: e.target.value})}>
-                      <option value="USD">💵 USD Dollar</option>
-                      <option value="EUR">💶 EUR Euro</option>
-                      <option value="TRY">₺ TRY Turkish Lira</option>
-                      <option value="GBP">£ GBP British Pound</option>
+                      <option value="USD">💵 USD Dollar</option><option value="EUR">💶 EUR Euro</option><option value="TRY">₺ TRY Turkish Lira</option><option value="GBP">£ GBP British Pound</option>
                     </select>
-
-                    {/* Hotel Class */}
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, hotel: e.target.value})}>
-                      <option value="1">🏨 3★ Economy Hotel</option>
-                      <option value="1.8">🏨 4★ Business Hotel</option>
-                      <option value="3.5">🏨 5★ Executive Hotel</option>
+                      <option value="1">🏨 3★ Economy</option><option value="1.8">🏨 4★ Business</option><option value="3.5">🏨 5★ Executive</option>
                     </select>
-
-                    {/* Food Preferences */}
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, food: e.target.value})}>
-                      <option value="30">🍔 Budget / Fast Food</option>
-                      <option value="70" selected>🍽️ Medium / Standard</option>
-                      <option value="150">🍷 Fine Dining / Luxury</option>
+                      <option value="30">🍔 Budget Food</option><option value="70" selected>🍽️ Medium Dining</option><option value="150">🍷 Fine Dining</option>
                     </select>
-
-                    {/* Transport */}
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, transport: e.target.value})}>
-                      <option value="15">🚇 Public Transport</option>
-                      <option value="50">🚕 Taxi / Uber</option>
-                      <option value="70">🚗 Rent a Car</option>
+                      <option value="15">🚇 Public Transport</option><option value="50">🚕 Taxi / Uber</option><option value="70">🚗 Rent a Car</option>
                     </select>
                   </div>
-
-                /* ---------------- DİĞER ARAÇLARIN INPUTLARI ---------------- */
                 ) : activeTab === "acoustic-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input type="number" placeholder="Width (m)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input type="number" placeholder="Length (m)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input type="number" placeholder="Height (m)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input type="number" placeholder="W" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input type="number" placeholder="L" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input type="number" placeholder="H" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "stats-calc" ? (
                   <textarea className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500" placeholder="Paste data (10, 20, 30...)" onChange={(e) => setInput(e.target.value)} />
                 ) : (
-                  <input type="text" placeholder="Enter value..." className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                  <input type="text" placeholder={toolData[activeTab]?.how || "Enter value..."} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 )}
                 
-                <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">GENERATE REPORT</button>
+                <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
                 <pre className="p-4 md:p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-xs md:text-sm whitespace-pre-wrap overflow-x-auto leading-relaxed">{output || "Awaiting execution..."}</pre>
               </div>
-
-            // METİN ODAKLI ÇİFT EKRANLI ARAÇLAR (JSON, BASE64 vs)
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <textarea className="h-48 md:h-96 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste data here..." />
@@ -277,6 +256,19 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {/* KAYBOLAN AÇIKLAMA KARTLARI GERİ GELDİ */}
+          <div className="grid md:grid-cols-2 gap-6 text-sm mb-12">
+            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50">
+              <h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">Why it matters</h3>
+              <p className="text-neutral-400 leading-relaxed">{toolData[activeTab]?.why}</p>
+            </div>
+            <div className="bg-neutral-900/40 p-6 rounded-xl border border-neutral-800/50">
+              <h3 className="text-emerald-500 font-bold mb-2 uppercase text-[10px] tracking-widest">Input Guide</h3>
+              <p className="text-neutral-400 leading-relaxed">{toolData[activeTab]?.how}</p>
+            </div>
+          </div>
+          
         </div>
         <footer className="p-6 border-t border-neutral-800 text-[10px] text-neutral-600 text-center mt-auto italic font-mono">Analog heart, digital precision. © 2026 ConverterLab</footer>
       </main>
