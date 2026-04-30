@@ -41,7 +41,6 @@ export default function Home() {
   }, []);
 
   const calculateLogic = (type) => {
-    // Sharp (#) arrays for standard output calculation
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
@@ -97,10 +96,8 @@ export default function Home() {
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²`);
         break;
 
-      // 🎶 Geliştirilmiş Circle of Fifths
       case 'circle':
         const cleanNote = input.trim().charAt(0).toUpperCase() + input.trim().slice(1).toLowerCase();
-        // Bemol(b) ve Diyez(#) Dönüşüm Tablosu (Fool-proof)
         const noteMap = { "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4, "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9, "A#":10, "Bb":10, "B":11 };
         
         const rootIdx = noteMap[cleanNote];
@@ -113,7 +110,6 @@ export default function Home() {
         setOutput(`ROOT KEY: ${keysSharp[rootIdx]} Major / ${cleanNote !== keysSharp[rootIdx] ? '('+cleanNote+' Major)' : ''}\n==========================================\nPerfect 4th (Subdominant) : ${subdominant} Major\nPerfect 5th (Dominant)    : ${dominant} Major\nRelative Minor Scale      : ${relMinor} Minor (${relMinor}m)\n\n*Use these chords for foundational harmonic progressions.`);
         break;
 
-      // 🎶 YENİ ARAÇ: Pitch Shift BPM Calculator
       case 'pitch':
         const origBpm = parseFloat(input);
         const semitones = parseFloat(input2);
@@ -124,7 +120,6 @@ export default function Home() {
         setOutput(`Original BPM: ${origBpm}\nPitch Shift: ${semitones > 0 ? '+' : ''}${semitones} Semitones\n\n--- REPITCH RESULT ---\nNew Target BPM: ${newBpm.toFixed(2)}\n\n*Pitching a sample UP speeds it up. Pitching it DOWN slows it down. Sync this new BPM in your DAW.`);
         break;
 
-      // 🎶 YENİ ARAÇ: Note to Frequency
       case 'note-freq':
         const noteRegex = /^([a-gA-G])([#b]?)(-?\d+)$/;
         const match = input.trim().match(noteRegex);
@@ -139,7 +134,6 @@ export default function Home() {
         if(nAccidental === '#') baseMidi += 1;
         if(nAccidental === 'b') baseMidi -= 1;
         
-        // C4 = MIDI 60 (Standard Roland tracking)
         const finalMidi = baseMidi + ((nOctave + 1) * 12);
         const finalFreq = 440 * Math.pow(2, (finalMidi - 69) / 12);
         
@@ -209,7 +203,6 @@ export default function Home() {
     }
   };
 
-  // 🛠️ TOOL METADATA (TAMAMEN GÜNCELLENDİ VE ÖLÇÜ BİRİMLERİ EKLENDİ)
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
     "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
@@ -220,16 +213,12 @@ export default function Home() {
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
     "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
     "markdown": { name: "Markdown Preview", how: "Write Markdown formatting text.", why: "Real-time documentation rendering." },
-    
-    // 🎶 MUSIC LAB GÜNCELLENEN ARAÇLAR
     "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Accurately calculates perfect 4th, 5th, and relative minor keys for harmony planning." },
     "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched (transposed)." },
     "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Accurately identifies the Hertz (Hz) value of a specific MIDI note for precise synth and LFO design." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
     "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for acoustic synth/kick drum tuning." },
     "acoustic-calc": { name: "Room Treatment", how: "Enter Width, Length, and Height (Range: > 0 Meters).", why: "Calculates surface area (m²) and minimum acoustic panel requirements." },
-    
-    // 🎮 GAME DEV TOOLS
     "deg-rad": { name: "Degrees to Radians", how: "Enter rotation angle (Range: Any +/- Degrees).", why: "Game engines use Radians for vector math and Quaternions." },
     "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
     "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
@@ -261,7 +250,6 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
           <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
-          {/* YENİ MÜZİK LAB MENÜSÜ */}
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
         </div>
@@ -351,13 +339,11 @@ export default function Home() {
                     <input value={input} type="number" min="0" step="any" placeholder="Speed (Units/sec) e.g. 5.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                     <input value={input2} type="number" min="1" step="1" placeholder="Engine FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
-                // 🚀 YENİ MÜZİK ARACI: PITCH SHIFT BPM
                 ) : activeTab === "pitch-shift" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input value={input} type="number" min="1" step="any" placeholder="Original BPM (e.g. 120)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                     <input value={input2} type="number" step="1" placeholder="Semitones (+ or -) e.g. -2, 3" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
-                // 🎶 YAZI TABANLI MÜZİK/OYUN ARAÇLARI (NOTE, CIRCLE, HEX)
                 ) : activeTab === "circle-fifths" || activeTab === "hex-shader" || activeTab === "note-freq" ? (
                   <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 ) : activeTab === "stats-calc" ? (
@@ -389,7 +375,16 @@ export default function Home() {
           </div>
           
         </div>
-        <footer className="p-6 border-t border-neutral-800 text-[10px] text-neutral-600 text-center mt-auto italic font-mono">Analog heart, digital precision. © 2026 ConverterLab</footer>
+        
+        {/* 🔥 GERİ GETİRİLEN VE ŞIKLAŞTIRILAN FOOTER */}
+        <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto font-mono">
+          <div>Analog heart, digital precision. © 2026 ConverterLab</div>
+          <div className="flex gap-6">
+            <a href="/privacy" className="hover:text-emerald-500 transition-colors uppercase tracking-wider">Privacy Policy</a>
+            <a href="/terms" className="hover:text-emerald-500 transition-colors uppercase tracking-wider">Terms of Use</a>
+          </div>
+        </footer>
+
       </main>
     </div>
   );
