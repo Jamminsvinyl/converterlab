@@ -112,7 +112,7 @@ export default function Home() {
 
       case 'deg':
         const deg = parseFloat(input);
-        if(isNaN(deg)) { setOutput("⚠️ ERROR: Enter a valid numeric angle (e.g. 90, 180.5)."); return; }
+        if(isNaN(deg)) { setOutput("⚠️ ERROR: Enter a valid numeric angle (e.g. 90, -180.5)."); return; }
         setOutput(`${deg} Degrees = ${(deg * Math.PI / 180).toFixed(4)} Radians\n\n*Note: Unity/Unreal Math functions usually expect Radians.`);
         break;
 
@@ -159,12 +159,13 @@ export default function Home() {
         setOutput(`Horizontal FOV: ${hFov}°\nScreen Aspect Ratio: ${aw}:${ah}\n\n--- RESULT ---\nVertical FOV: ${vFov.toFixed(2)}°\n\n*Many 3D engines (Unity) require Vertical FOV for camera setup.`);
         break;
 
-      case 'tex-mem':
-        const tw = parseFloat(input), th = parseFloat(input2), bpp = parseFloat(input3);
-        if(isNaN(tw) || isNaN(th) || isNaN(bpp) || tw <= 0 || th <= 0 || bpp <= 0) { setOutput("⚠️ ERROR: Width, Height, and BPP must be > 0 (e.g. 1024, 1024, 32)."); return; }
-        const bytes = tw * th * (bpp / 8);
-        const mb = bytes / 1024 / 1024;
-        setOutput(`Texture Map: ${tw} x ${th} px\nColor Depth: ${bpp}-Bit\n\n--- VRAM MEMORY USAGE ---\nMegabytes: ${mb.toFixed(4)} MB\nKilobytes: ${(bytes/1024).toFixed(2)} KB\nBytes: ${bytes.toLocaleString()} bytes`);
+      // 🚀 YENİ EKLENEN KURŞUN GEÇİRMEZ ARAÇ
+      case 'delta':
+        const speed = parseFloat(input), engineFps = parseFloat(input2);
+        if(isNaN(speed) || isNaN(engineFps) || engineFps <= 0) { setOutput("⚠️ ERROR: Speed must be a number, and Target FPS must be greater than 0."); return; }
+        const unitsPerFrame = speed / engineFps;
+        const frameTimeMs = 1000 / engineFps;
+        setOutput(`Movement Speed: ${speed} Units/sec\nTarget Framerate: ${engineFps} FPS\n\n--- DELTA TIME RESULT ---\nMovement per Frame: ${unitsPerFrame.toFixed(4)} Units\nFrame Duration (DeltaTime): ${frameTimeMs.toFixed(2)} ms\n\n*Use this to test Time.deltaTime physics predictability.`);
         break;
 
       default: 
@@ -173,6 +174,7 @@ export default function Home() {
     }
   };
 
+  // 🛠️ TOOL METADATA (TAMAMEN GÜNCELLENDİ VE ÖLÇÜ BİRİMLERİ EKLENDİ)
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
     "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
@@ -194,7 +196,8 @@ export default function Home() {
     "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
     "lerp-calc": { name: "Lerp Calculator", how: "Enter Start(A), End(B) points, and Time/Alpha(t).", why: "Linear interpolation is the backbone of smooth movement and camera tracking." },
     "fov-calc": { name: "FOV Converter", how: "Enter Horiz. FOV (1-179°) and Aspect W/H ratio.", why: "Converts Horizontal FOV to Vertical FOV required by Unity/Unreal cameras." },
-    "tex-mem": { name: "Texture VRAM Calc", how: "Enter Texture Width (px), Height (px), and Color Depth (Bits).", why: "Estimates the raw VRAM memory footprint (MB) of uncompressed textures." }
+    // 🚀 YENİ EKLENEN ARACIN METADATASI
+    "delta-time": { name: "Delta Time Calc", how: "Enter Speed (Units/sec) and Target Engine FPS.", why: "Calculates exact movement step per frame for frame-rate independent physics." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -220,7 +223,8 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "tex-mem"]} />
+          {/* YENİ ARAÇ MENÜYE EKLENDİ */}
+          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
         </div>
       </aside>
 
@@ -233,7 +237,7 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "tex-mem"]} />
+          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
         </div>
       )}
 
@@ -249,7 +253,7 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "tex-mem"].includes(activeTab) ? (
+            {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
                 {activeTab === "travel-calc" ? (
@@ -282,14 +286,14 @@ export default function Home() {
                   </div>
                 ) : activeTab === "aspect-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="1" placeholder="Orig Width (px) e.g. 1920" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" placeholder="Orig Height (px) e.g. 1080" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="1" placeholder="Target Width (px) (Optional)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="1" step="1" placeholder="Orig Width (px) e.g. 1920" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" step="1" placeholder="Orig Height (px) e.g. 1080" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="1" step="1" placeholder="Target Width (px) e.g. 800" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "fps-ms" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input value={input} type="number" min="1" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="0" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input} type="number" min="1" step="1" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="0" step="1" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
                 ) : activeTab === "lerp-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -299,22 +303,22 @@ export default function Home() {
                   </div>
                 ) : activeTab === "fov-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="1" max="179" placeholder="Horiz. FOV (Deg) e.g. 90" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="1" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="1" max="179" step="1" placeholder="Horiz. FOV (Deg) e.g. 90" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" step="any" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="1" step="any" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
-                ) : activeTab === "tex-mem" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="1" placeholder="Width (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" placeholder="Height (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="1" placeholder="Color Bits (e.g. 8, 16, 32)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                // 🚀 YENİ ARACIN INPUT KISMI
+                ) : activeTab === "delta-time" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input value={input} type="number" min="0" step="any" placeholder="Speed (Units/sec) e.g. 5.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" step="1" placeholder="Engine FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
                 ) : activeTab === "circle-fifths" || activeTab === "hex-shader" ? (
                   <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 ) : activeTab === "stats-calc" ? (
                   <textarea value={input} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500" placeholder="E.g. 10.5, 20.3, 45, 90..." onChange={(e) => setInput(e.target.value)} />
                 ) : (
-                  <input value={input} type="number" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                  <input value={input} type="number" min="0" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 )}
                 
                 <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
