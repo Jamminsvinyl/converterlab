@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("travel-calc");
+  const [activeTab, setActiveTab] = useState("landed-cost");
   const [input, setInput] = useState("");
   const [input2, setInput2] = useState("");
   const [input3, setInput3] = useState("");
@@ -11,9 +11,12 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [exchangeRates, setExchangeRates] = useState({ TRY: 33.0, EUR: 0.93, GBP: 0.79, USD: 1 });
 
-  // ✈️ TRAVEL EXPENSE STATE
   const [travelForm, setTravelForm] = useState({
     destVal: "1.0", destName: "Global Average", days: "1", hotel: "1", food: "70", transport: "15", currency: "USD"
+  });
+
+  const [landedForm, setLandedForm] = useState({
+    val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
   });
 
   const destinations = [
@@ -44,6 +47,58 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
+      case 'landed':
+        const val = parseFloat(landedForm.val);
+        const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
+        const kg = parseFloat(landedForm.weight), frRate = parseFloat(landedForm.frRate);
+        const dutyRate = parseFloat(landedForm.duty), vatRate = parseFloat(landedForm.vat);
+        const ins = parseFloat(landedForm.ins) || 0, extra = parseFloat(landedForm.extra) || 0;
+
+        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(kg) || isNaN(frRate)) {
+          setOutput("⚠️ ERROR: Please fill in FOB Value, Box Dimensions (L,W,H), Weight, and Freight Rate.");
+          return;
+        }
+
+        const volKg = (l * w * h) / 5000;
+        const chargeableKg = Math.max(kg, volKg);
+        const freightCost = chargeableKg * frRate;
+        const cif = val + freightCost + ins;
+        const dutyAmt = cif * (dutyRate / 100);
+        const vatBase = cif + dutyAmt; 
+        const vatAmt = vatBase * (vatRate / 100);
+        const totalLanded = cif + dutyAmt + vatAmt + extra;
+
+        const curr = landedForm.curr;
+        const fmt = (amt) => new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(amt);
+
+        let warnMsg = "";
+        if (dutyRate >= 30 && val > 30 && (curr === "EUR" || curr === "USD")) {
+          warnMsg = "\n\n⚠️ WARNING: B2C personal imports above 30 EUR/USD limit may be subject to commercial customs procedures and brokerage fees in TR.";
+        }
+
+        setOutput(
+          `🚢 GLOBAL LANDED COST & CUSTOMS DECLARATION\n` +
+          `==========================================\n` +
+          `📦 FREIGHT CALCULATION\n` +
+          `Dimensions    : ${l}x${w}x${h} cm\n` +
+          `Actual Weight : ${kg.toFixed(2)} kg\n` +
+          `Volumetric Wt : ${volKg.toFixed(2)} kg (IATA Divisor: 5000)\n` +
+          `Chargeable Wt : ${chargeableKg.toFixed(2)} kg\n` +
+          `Freight Cost  : ${fmt(freightCost)}\n\n` +
+          `🏦 CUSTOMS BASIS (CIF VALUE)\n` +
+          `Goods (FOB)   : ${fmt(val)}\n` +
+          `Insurance     : ${fmt(ins)}\n` +
+          `CIF Matrah    : ${fmt(cif)}\n\n` +
+          `⚖️ TAXES & DUTIES\n` +
+          `Customs Duty  : ${fmt(dutyAmt)} (${dutyRate}% of CIF)\n` +
+          `VAT Base      : ${fmt(vatBase)} (CIF + Duty)\n` +
+          `VAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\n` +
+          `Extra Fees    : ${fmt(extra)} (Broker/Storage)\n` +
+          `------------------------------------------\n` +
+          `💰 TOTAL LANDED COST: ${fmt(totalLanded)}` + warnMsg
+        );
+        break;
+
       case 'travel':
         const tDays = parseInt(travelForm.days);
         if(!tDays || tDays <= 0 || tDays > 365) { setOutput("⚠️ ERROR: Duration must be between 1 and 365 days."); return; }
@@ -56,6 +111,7 @@ export default function Home() {
         const bufferTotalUSD = totalUSD * 1.10; 
         const rate = exchangeRates[travelForm.currency] || 1;
         const formatCurr = (amt, c) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: c }).format(amt);
+        
         let hotelLabel = tHotelMult === 3.5 ? "5★ Executive" : tHotelMult === 1.8 ? "4★ Business" : "3★ Economy";
         let foodLabel = tFood === 150 ? "Fine Dining" : tFood === 70 ? "Medium/Standard" : "Budget/Fast Food";
         let transLabel = tTransport === 70 ? "Rent a Car" : tTransport === 50 ? "Taxi/Uber" : "Public Transport";
@@ -90,23 +146,20 @@ export default function Home() {
         break;
 
       case 'acoustic':
-        const w = parseFloat(input), l = parseFloat(input2), h = parseFloat(input3);
-        if(isNaN(w) || isNaN(l) || isNaN(h) || w <= 0 || l <= 0 || h <= 0) { setOutput("⚠️ ERROR: Width, Length, and Height must be positive numbers in meters (m)."); return; }
-        const area = 2 * (w * l + l * h + w * h);
+        const acW = parseFloat(input), acL = parseFloat(input2), acH = parseFloat(input3);
+        if(isNaN(acW) || isNaN(acL) || isNaN(acH) || acW <= 0 || acL <= 0 || acH <= 0) { setOutput("⚠️ ERROR: Width, Length, and Height must be positive numbers in meters (m)."); return; }
+        const area = 2 * (acW * acL + acL * acH + acW * acH);
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²`);
         break;
 
       case 'circle':
         const cleanNote = input.trim().charAt(0).toUpperCase() + input.trim().slice(1).toLowerCase();
         const noteMap = { "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4, "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9, "A#":10, "Bb":10, "B":11 };
-        
         const rootIdx = noteMap[cleanNote];
-        if(rootIdx === undefined) { setOutput("⚠️ ERROR: Invalid note format. Please enter a valid root note (e.g. C, F#, Bb, Eb). Do not include minor (m) symbols here."); return; }
-        
+        if(rootIdx === undefined) { setOutput("⚠️ ERROR: Invalid note format. Please enter a valid root note (e.g. C, F#, Bb, Eb)."); return; }
         const subdominant = keysSharp[(rootIdx + 5) % 12];
         const dominant = keysSharp[(rootIdx + 7) % 12];
         const relMinor = keysSharp[(rootIdx + 9) % 12];
-        
         setOutput(`ROOT KEY: ${keysSharp[rootIdx]} Major / ${cleanNote !== keysSharp[rootIdx] ? '('+cleanNote+' Major)' : ''}\n==========================================\nPerfect 4th (Subdominant) : ${subdominant} Major\nPerfect 5th (Dominant)    : ${dominant} Major\nRelative Minor Scale      : ${relMinor} Minor (${relMinor}m)\n\n*Use these chords for foundational harmonic progressions.`);
         break;
 
@@ -115,28 +168,23 @@ export default function Home() {
         const semitones = parseFloat(input2);
         if(isNaN(origBpm) || origBpm <= 0) { setOutput("⚠️ ERROR: Original BPM must be a positive number."); return; }
         if(isNaN(semitones)) { setOutput("⚠️ ERROR: Semitone shift must be a valid number (e.g., 3 or -2)."); return; }
-        
         const newBpm = origBpm * Math.pow(2, semitones / 12);
-        setOutput(`Original BPM: ${origBpm}\nPitch Shift: ${semitones > 0 ? '+' : ''}${semitones} Semitones\n\n--- REPITCH RESULT ---\nNew Target BPM: ${newBpm.toFixed(2)}\n\n*Pitching a sample UP speeds it up. Pitching it DOWN slows it down. Sync this new BPM in your DAW.`);
+        setOutput(`Original BPM: ${origBpm}\nPitch Shift: ${semitones > 0 ? '+' : ''}${semitones} Semitones\n\n--- REPITCH RESULT ---\nNew Target BPM: ${newBpm.toFixed(2)}\n\n*Pitching a sample UP speeds it up. Pitching it DOWN slows it down.`);
         break;
 
       case 'note-freq':
         const noteRegex = /^([a-gA-G])([#b]?)(-?\d+)$/;
         const match = input.trim().match(noteRegex);
         if(!match) { setOutput("⚠️ ERROR: Invalid format. Please enter a Note and Octave (e.g., C4, F#3, Bb2)."); return; }
-        
         const nLetter = match[1].toUpperCase();
         const nAccidental = match[2].toLowerCase();
         const nOctave = parseInt(match[3]);
-        
         const nMap = { "C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11 };
         let baseMidi = nMap[nLetter];
         if(nAccidental === '#') baseMidi += 1;
         if(nAccidental === 'b') baseMidi -= 1;
-        
         const finalMidi = baseMidi + ((nOctave + 1) * 12);
         const finalFreq = 440 * Math.pow(2, (finalMidi - 69) / 12);
-        
         setOutput(`Input Note: ${nLetter}${nAccidental}${nOctave}\nMIDI Note Number: ${finalMidi}\n\n--- FREQUENCY RESULT ---\nExact Frequency: ${finalFreq.toFixed(2)} Hz\n\n*A4 is standard tuning reference at 440 Hz.`);
         break;
 
@@ -194,7 +242,7 @@ export default function Home() {
         if(isNaN(speed) || isNaN(engineFps) || engineFps <= 0) { setOutput("⚠️ ERROR: Speed must be a number, and Target FPS must be greater than 0."); return; }
         const unitsPerFrame = speed / engineFps;
         const frameTimeMs = 1000 / engineFps;
-        setOutput(`Movement Speed: ${speed} Units/sec\nTarget Framerate: ${engineFps} FPS\n\n--- DELTA TIME RESULT ---\nMovement per Frame: ${unitsPerFrame.toFixed(4)} Units\nFrame Duration (DeltaTime): ${frameTimeMs.toFixed(2)} ms\n\n*Use this to test Time.deltaTime physics predictability.`);
+        setOutput(`Movement Speed: ${speed} Units/sec\nTarget Framerate: ${engineFps} FPS\n\n--- DELTA TIME RESULT ---\nMovement per Frame: ${unitsPerFrame.toFixed(4)} Units\nFrame Duration (DeltaTime): ${frameTimeMs.toFixed(2)} ms`);
         break;
 
       default: 
@@ -205,6 +253,7 @@ export default function Home() {
 
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
+    "landed-cost": { name: "Global Landed Cost", how: "Enter Box Dimensions (cm), Weight (kg), FOB Value, and Duty Rates.", why: "Accurately calculates Chargeable Weight (IATA) and CIF-based Customs Duties for imports." },
     "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Data integration and parsing." },
     "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Rapid API endpoint testing and conversion." },
@@ -248,7 +297,7 @@ export default function Home() {
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0 px-4">
         <div className="py-8 px-4 border-b border-neutral-800 mb-4"><h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1></div>
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
-          <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
+          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
@@ -261,7 +310,7 @@ export default function Home() {
             <h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1>
             <button onClick={() => setIsMenuOpen(false)} className="text-emerald-500 font-bold border border-emerald-500/20 px-4 py-2 rounded-full text-xs">✕ CLOSE</button>
           </div>
-          <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
+          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
@@ -280,10 +329,37 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
+            {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {activeTab === "travel-calc" ? (
+                {/* 🚢 GLOBAL LANDED COST UI */}
+                {activeTab === "landed-cost" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <input value={landedForm.val} type="number" min="0" step="any" placeholder="FOB Value" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, curr: e.target.value})}>
+                      <option value="USD">💵 USD</option><option value="EUR">💶 EUR</option><option value="GBP">£ GBP</option><option value="TRY">₺ TRY</option>
+                    </select>
+                    <input value={landedForm.l} type="number" min="0" step="any" placeholder="Length (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                    <input value={landedForm.w} type="number" min="0" step="any" placeholder="Width (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                    <input value={landedForm.h} type="number" min="0" step="any" placeholder="Height (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                    <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Weight (kg)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                    <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate/kg" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-2" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
+                    
+                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-2" onChange={(e) => setLandedForm({...landedForm, duty: e.target.value})}>
+                      <option value="20">🌐 General B2B Import (20%)</option>
+                      <option value="0">🇪🇺 EU Origin ATR (0%)</option>
+                      <option value="30">📦 B2C EU Origin Limit (30%)</option>
+                      <option value="60">📦 B2C Non-EU Limit (60%)</option>
+                    </select>
+                    
+                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, vat: e.target.value})}>
+                      <option value="20">VAT 20%</option><option value="10">VAT 10%</option><option value="1">VAT 1%</option><option value="0">VAT 0%</option>
+                    </select>
+                    <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance Amt" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
+                    <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Broker/Storage Fees" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-4" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                  </div>
+
+                ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
                       {destinations.map(d => <option key={d.name} value={d.val}>{d.name}</option>)}
@@ -376,7 +452,7 @@ export default function Home() {
           
         </div>
         
-        {/* 🔥 GERİ GETİRİLEN VE ŞIKLAŞTIRILAN FOOTER */}
+        {/* 🔥 FOOTER WITH PRIVACY & TERMS LINKS */}
         <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto font-mono">
           <div>Analog heart, digital precision. © 2026 ConverterLab</div>
           <div className="flex gap-6">
