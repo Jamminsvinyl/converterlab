@@ -41,7 +41,8 @@ export default function Home() {
   }, []);
 
   const calculateLogic = (type) => {
-    const keys = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    // Sharp (#) arrays for standard output calculation
+    const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
       case 'travel':
@@ -79,7 +80,7 @@ export default function Home() {
         const roundedMidi = Math.round(midi);
         const exactFreq = 440 * Math.pow(2, (roundedMidi - 69) / 12);
         const cents = Math.round(1200 * Math.log2(hz / exactFreq));
-        setOutput(`Detected Note: ${keys[roundedMidi % 12]}${Math.floor(roundedMidi / 12) - 1}\nMIDI Note Number: ${roundedMidi}\nPerfect Pitch Freq: ${exactFreq.toFixed(2)} Hz\nDetune: ${cents > 0 ? '+' : ''}${cents} Cents`);
+        setOutput(`Detected Note: ${keysSharp[roundedMidi % 12]}${Math.floor(roundedMidi / 12) - 1}\nMIDI Note Number: ${roundedMidi}\nPerfect Pitch Freq: ${exactFreq.toFixed(2)} Hz\nDetune: ${cents > 0 ? '+' : ''}${cents} Cents`);
         break;
 
       case 'bpm':
@@ -96,18 +97,53 @@ export default function Home() {
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²`);
         break;
 
+      // 🎶 Geliştirilmiş Circle of Fifths
       case 'circle':
-        const cIdx = keys.indexOf(input.toUpperCase());
-        if(cIdx === -1) { setOutput("⚠️ ERROR: Invalid key. Enter a root note like C, F#, Bb, G."); return; }
-        setOutput(`Key: ${input.toUpperCase()} Major\n- Perfect 4th (Subdominant): ${keys[(cIdx + 5) % 12]}\n- Perfect 5th (Dominant): ${keys[(cIdx + 7) % 12]}\n- Relative Minor: ${keys[(cIdx + 9) % 12]}m`);
-        break;
+        const cleanNote = input.trim().charAt(0).toUpperCase() + input.trim().slice(1).toLowerCase();
+        // Bemol(b) ve Diyez(#) Dönüşüm Tablosu (Fool-proof)
+        const noteMap = { "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4, "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9, "A#":10, "Bb":10, "B":11 };
         
-      case 'harmonics':
-        const v = parseFloat(input);
-        if(isNaN(v) || v <= 0 || v > 15000) { setOutput("⚠️ ERROR: Base frequency must be between 1 Hz and 15000 Hz."); return; }
-        let hList = `Fundamental (1st): ${v} Hz\n`;
-        for(let i=2; i<=6; i++) hList += `Harmonic ${i}: ${(v * i).toFixed(1)} Hz\n`;
-        setOutput(hList);
+        const rootIdx = noteMap[cleanNote];
+        if(rootIdx === undefined) { setOutput("⚠️ ERROR: Invalid note format. Please enter a valid root note (e.g. C, F#, Bb, Eb). Do not include minor (m) symbols here."); return; }
+        
+        const subdominant = keysSharp[(rootIdx + 5) % 12];
+        const dominant = keysSharp[(rootIdx + 7) % 12];
+        const relMinor = keysSharp[(rootIdx + 9) % 12];
+        
+        setOutput(`ROOT KEY: ${keysSharp[rootIdx]} Major / ${cleanNote !== keysSharp[rootIdx] ? '('+cleanNote+' Major)' : ''}\n==========================================\nPerfect 4th (Subdominant) : ${subdominant} Major\nPerfect 5th (Dominant)    : ${dominant} Major\nRelative Minor Scale      : ${relMinor} Minor (${relMinor}m)\n\n*Use these chords for foundational harmonic progressions.`);
+        break;
+
+      // 🎶 YENİ ARAÇ: Pitch Shift BPM Calculator
+      case 'pitch':
+        const origBpm = parseFloat(input);
+        const semitones = parseFloat(input2);
+        if(isNaN(origBpm) || origBpm <= 0) { setOutput("⚠️ ERROR: Original BPM must be a positive number."); return; }
+        if(isNaN(semitones)) { setOutput("⚠️ ERROR: Semitone shift must be a valid number (e.g., 3 or -2)."); return; }
+        
+        const newBpm = origBpm * Math.pow(2, semitones / 12);
+        setOutput(`Original BPM: ${origBpm}\nPitch Shift: ${semitones > 0 ? '+' : ''}${semitones} Semitones\n\n--- REPITCH RESULT ---\nNew Target BPM: ${newBpm.toFixed(2)}\n\n*Pitching a sample UP speeds it up. Pitching it DOWN slows it down. Sync this new BPM in your DAW.`);
+        break;
+
+      // 🎶 YENİ ARAÇ: Note to Frequency
+      case 'note-freq':
+        const noteRegex = /^([a-gA-G])([#b]?)(-?\d+)$/;
+        const match = input.trim().match(noteRegex);
+        if(!match) { setOutput("⚠️ ERROR: Invalid format. Please enter a Note and Octave (e.g., C4, F#3, Bb2)."); return; }
+        
+        const nLetter = match[1].toUpperCase();
+        const nAccidental = match[2].toLowerCase();
+        const nOctave = parseInt(match[3]);
+        
+        const nMap = { "C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11 };
+        let baseMidi = nMap[nLetter];
+        if(nAccidental === '#') baseMidi += 1;
+        if(nAccidental === 'b') baseMidi -= 1;
+        
+        // C4 = MIDI 60 (Standard Roland tracking)
+        const finalMidi = baseMidi + ((nOctave + 1) * 12);
+        const finalFreq = 440 * Math.pow(2, (finalMidi - 69) / 12);
+        
+        setOutput(`Input Note: ${nLetter}${nAccidental}${nOctave}\nMIDI Note Number: ${finalMidi}\n\n--- FREQUENCY RESULT ---\nExact Frequency: ${finalFreq.toFixed(2)} Hz\n\n*A4 is standard tuning reference at 440 Hz.`);
         break;
 
       case 'deg':
@@ -159,7 +195,6 @@ export default function Home() {
         setOutput(`Horizontal FOV: ${hFov}°\nScreen Aspect Ratio: ${aw}:${ah}\n\n--- RESULT ---\nVertical FOV: ${vFov.toFixed(2)}°\n\n*Many 3D engines (Unity) require Vertical FOV for camera setup.`);
         break;
 
-      // 🚀 YENİ EKLENEN KURŞUN GEÇİRMEZ ARAÇ
       case 'delta':
         const speed = parseFloat(input), engineFps = parseFloat(input2);
         if(isNaN(speed) || isNaN(engineFps) || engineFps <= 0) { setOutput("⚠️ ERROR: Speed must be a number, and Target FPS must be greater than 0."); return; }
@@ -185,18 +220,22 @@ export default function Home() {
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
     "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
     "markdown": { name: "Markdown Preview", how: "Write Markdown formatting text.", why: "Real-time documentation rendering." },
-    "circle-fifths": { name: "Circle of Fifths", how: "Enter Musical Key (String: C, F#, Bb).", why: "Calculates subdominant/dominant relations for harmony planning." },
-    "harmonics-calc": { name: "Upper Harmonics", how: "Enter base frequency (Range: 1 - 15000 Hz).", why: "Identifies mathematical overtones for analog warmth synthesis." },
+    
+    // 🎶 MUSIC LAB GÜNCELLENEN ARAÇLAR
+    "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Accurately calculates perfect 4th, 5th, and relative minor keys for harmony planning." },
+    "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched (transposed)." },
+    "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Accurately identifies the Hertz (Hz) value of a specific MIDI note for precise synth and LFO design." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
-    "freq-note": { name: "Freq to Note", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for synth/kick tuning." },
+    "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for acoustic synth/kick drum tuning." },
     "acoustic-calc": { name: "Room Treatment", how: "Enter Width, Length, and Height (Range: > 0 Meters).", why: "Calculates surface area (m²) and minimum acoustic panel requirements." },
+    
+    // 🎮 GAME DEV TOOLS
     "deg-rad": { name: "Degrees to Radians", how: "Enter rotation angle (Range: Any +/- Degrees).", why: "Game engines use Radians for vector math and Quaternions." },
     "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
     "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
     "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
     "lerp-calc": { name: "Lerp Calculator", how: "Enter Start(A), End(B) points, and Time/Alpha(t).", why: "Linear interpolation is the backbone of smooth movement and camera tracking." },
     "fov-calc": { name: "FOV Converter", how: "Enter Horiz. FOV (1-179°) and Aspect W/H ratio.", why: "Converts Horizontal FOV to Vertical FOV required by Unity/Unreal cameras." },
-    // 🚀 YENİ EKLENEN ARACIN METADATASI
     "delta-time": { name: "Delta Time Calc", how: "Enter Speed (Units/sec) and Target Engine FPS.", why: "Calculates exact movement step per frame for frame-rate independent physics." }
   };
 
@@ -222,8 +261,8 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
           <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
-          <NavGroup title="Music Lab" items={["circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          {/* YENİ ARAÇ MENÜYE EKLENDİ */}
+          {/* YENİ MÜZİK LAB MENÜSÜ */}
+          <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
         </div>
       </aside>
@@ -236,7 +275,7 @@ export default function Home() {
           </div>
           <NavGroup title="Business & Data" items={["travel-calc", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
-          <NavGroup title="Music Lab" items={["circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "acoustic-calc"]} />
+          <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
         </div>
       )}
@@ -253,7 +292,7 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "harmonics-calc", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
+            {["travel-calc", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
                 {activeTab === "travel-calc" ? (
@@ -307,14 +346,20 @@ export default function Home() {
                     <input value={input2} type="number" min="1" step="any" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                     <input value={input3} type="number" min="1" step="any" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
-                // 🚀 YENİ ARACIN INPUT KISMI
                 ) : activeTab === "delta-time" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input value={input} type="number" min="0" step="any" placeholder="Speed (Units/sec) e.g. 5.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                     <input value={input2} type="number" min="1" step="1" placeholder="Engine FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
-                ) : activeTab === "circle-fifths" || activeTab === "hex-shader" ? (
-                  <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                // 🚀 YENİ MÜZİK ARACI: PITCH SHIFT BPM
+                ) : activeTab === "pitch-shift" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input value={input} type="number" min="1" step="any" placeholder="Original BPM (e.g. 120)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" step="1" placeholder="Semitones (+ or -) e.g. -2, 3" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                  </div>
+                // 🎶 YAZI TABANLI MÜZİK/OYUN ARAÇLARI (NOTE, CIRCLE, HEX)
+                ) : activeTab === "circle-fifths" || activeTab === "hex-shader" || activeTab === "note-freq" ? (
+                  <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 ) : activeTab === "stats-calc" ? (
                   <textarea value={input} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500" placeholder="E.g. 10.5, 20.3, 45, 90..." onChange={(e) => setInput(e.target.value)} />
                 ) : (
