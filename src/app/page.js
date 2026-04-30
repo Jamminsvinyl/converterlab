@@ -45,7 +45,8 @@ export default function Home() {
     
     switch(type) {
       case 'travel':
-        const tDays = parseInt(travelForm.days) || 1;
+        const tDays = parseInt(travelForm.days);
+        if(!tDays || tDays <= 0 || tDays > 365) { setOutput("⚠️ ERROR: Duration must be between 1 and 365 days."); return; }
         const tIndex = parseFloat(travelForm.destVal);
         const tHotelMult = parseFloat(travelForm.hotel);
         const tFood = parseFloat(travelForm.food);
@@ -64,7 +65,7 @@ export default function Home() {
 
       case 'stats':
         const nums = input.split(/[, \s\n]+/).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
-        if(nums.length === 0) { setOutput("Please enter valid numeric data."); return; }
+        if(nums.length === 0) { setOutput("⚠️ ERROR: Please enter valid numeric data (e.g. 10.5, 20, 30)."); return; }
         const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
         const median = nums.length % 2 === 0 ? (nums[nums.length/2 - 1] + nums[nums.length/2]) / 2 : nums[Math.floor(nums.length/2)];
         const stdDev = Math.sqrt(nums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / nums.length);
@@ -73,7 +74,7 @@ export default function Home() {
 
       case 'freq':
         const hz = parseFloat(input);
-        if(!hz || hz <= 0) { setOutput("Please enter a valid positive frequency (e.g., 440)."); return; }
+        if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
         const midi = 12 * (Math.log2(hz / 440)) + 69;
         const roundedMidi = Math.round(midi);
         const exactFreq = 440 * Math.pow(2, (roundedMidi - 69) / 12);
@@ -82,26 +83,28 @@ export default function Home() {
         break;
 
       case 'bpm':
-        const bpmMs = (60000 / parseFloat(input)).toFixed(2);
-        if(!bpmMs || bpmMs === "Infinity" || bpmMs <= 0) { setOutput("Please enter a valid BPM (e.g., 120)."); return; }
+        const bpmVal = parseFloat(input);
+        if(isNaN(bpmVal) || bpmVal <= 0 || bpmVal > 999) { setOutput("⚠️ ERROR: BPM must be a positive number between 1 and 999."); return; }
+        const bpmMs = (60000 / bpmVal).toFixed(2);
         setOutput(`1/4 Note (Quarter): ${bpmMs} ms\n1/8 Note (Eighth): ${(bpmMs/2).toFixed(2)} ms\n1/16 Note (Sixteenth): ${(bpmMs/4).toFixed(2)} ms`);
         break;
 
       case 'acoustic':
-        const area = 2 * (parseFloat(input) * parseFloat(input2) + parseFloat(input2) * parseFloat(input3) + parseFloat(input) * parseFloat(input3));
-        if(!area || isNaN(area) || area <= 0) { setOutput("Please enter valid dimensions in meters."); return; }
+        const w = parseFloat(input), l = parseFloat(input2), h = parseFloat(input3);
+        if(isNaN(w) || isNaN(l) || isNaN(h) || w <= 0 || l <= 0 || h <= 0) { setOutput("⚠️ ERROR: Width, Length, and Height must be positive numbers in meters (m)."); return; }
+        const area = 2 * (w * l + l * h + w * h);
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²`);
         break;
 
       case 'circle':
         const cIdx = keys.indexOf(input.toUpperCase());
-        if(cIdx === -1) { setOutput("Invalid key. Please enter a root note like C, F#, Bb."); return; }
+        if(cIdx === -1) { setOutput("⚠️ ERROR: Invalid key. Enter a root note like C, F#, Bb, G."); return; }
         setOutput(`Key: ${input.toUpperCase()} Major\n- Perfect 4th (Subdominant): ${keys[(cIdx + 5) % 12]}\n- Perfect 5th (Dominant): ${keys[(cIdx + 7) % 12]}\n- Relative Minor: ${keys[(cIdx + 9) % 12]}m`);
         break;
         
       case 'harmonics':
         const v = parseFloat(input);
-        if(!v || v <= 0) { setOutput("Enter a base frequency in Hz."); return; }
+        if(isNaN(v) || v <= 0 || v > 15000) { setOutput("⚠️ ERROR: Base frequency must be between 1 Hz and 15000 Hz."); return; }
         let hList = `Fundamental (1st): ${v} Hz\n`;
         for(let i=2; i<=6; i++) hList += `Harmonic ${i}: ${(v * i).toFixed(1)} Hz\n`;
         setOutput(hList);
@@ -109,19 +112,19 @@ export default function Home() {
 
       case 'deg':
         const deg = parseFloat(input);
-        if(isNaN(deg)) { setOutput("Please enter a valid angle in degrees."); return; }
+        if(isNaN(deg)) { setOutput("⚠️ ERROR: Enter a valid numeric angle (e.g. 90, 180.5)."); return; }
         setOutput(`${deg} Degrees = ${(deg * Math.PI / 180).toFixed(4)} Radians\n\n*Note: Unity/Unreal Math functions usually expect Radians.`);
         break;
 
       case 'aspect':
-        const w = parseFloat(input), h = parseFloat(input2), nw = parseFloat(input3);
-        if(!w || !h) { setOutput("Enter Original Width and Height in pixels."); return; }
+        const ow = parseFloat(input), oh = parseFloat(input2), nw = parseFloat(input3);
+        if(isNaN(ow) || isNaN(oh) || ow <= 0 || oh <= 0) { setOutput("⚠️ ERROR: Original Width and Height must be positive pixels (px)."); return; }
         const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-        const div = gcd(w, h);
-        let out = `Original Resolution: ${w} x ${h} px\nAspect Ratio: ${w/div}:${h/div}\nRatio Decimal: ${(w/h).toFixed(4)}`;
-        if(nw) {
-            const nh = (h / w) * nw;
-            out += `\n\n--- UI SCALED RESOLUTION ---\nNew Width: ${nw} px\nNew Height: ${Math.round(nh)} px (Exact: ${nh.toFixed(2)})`;
+        const div = gcd(ow, oh);
+        let out = `Original Resolution: ${ow} x ${oh} px\nAspect Ratio: ${ow/div}:${oh/div}\nRatio Decimal: ${(ow/oh).toFixed(4)}`;
+        if(nw && nw > 0) {
+            const nh = (oh / ow) * nw;
+            out += `\n\n--- UI SCALED RESOLUTION ---\nTarget Width: ${nw} px\nTarget Height: ${Math.round(nh)} px (Exact: ${nh.toFixed(2)})`;
         }
         setOutput(out);
         break;
@@ -129,35 +132,36 @@ export default function Home() {
       case 'hex':
         let hex = input.replace("#", "").trim();
         if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
-        if(hex.length !== 6) { setOutput("Enter a valid 6-digit Hex code (e.g., FF5733)"); return; }
+        const hexRegex = /^[0-9A-Fa-f]{6}$/;
+        if(!hexRegex.test(hex)) { setOutput("⚠️ ERROR: Enter a valid 6-digit Hex code (e.g., FF5733)."); return; }
         const r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
         setOutput(`Standard RGB: rgb(${r}, ${g}, ${b})\n\n--- SHADER CODE (Normalized 0.0 - 1.0) ---\nvec4(${(r/255).toFixed(3)}f, ${(g/255).toFixed(3)}f, ${(b/255).toFixed(3)}f, 1.000f)`);
         break;
 
       case 'fps':
         const fps = parseFloat(input), frames = parseFloat(input2);
-        if(!fps || !frames) { setOutput("Enter Target FPS and Frame count."); return; }
+        if(isNaN(fps) || isNaN(frames) || fps <= 0 || frames < 0) { setOutput("⚠️ ERROR: Target FPS must be > 0 and Frames must be >= 0."); return; }
         const ms = (frames / fps) * 1000;
         setOutput(`Target Engine Speed: ${fps} FPS\nAnimation Frame Count: ${frames} frames\n\n--- DURATION ---\nMilliseconds: ${ms.toFixed(2)} ms\nSeconds: ${(ms/1000).toFixed(4)} s`);
         break;
 
       case 'lerp':
         const start = parseFloat(input), end = parseFloat(input2), t = parseFloat(input3);
-        if(isNaN(start) || isNaN(end) || isNaN(t)) { setOutput("Enter Start, End, and Time(t)."); return; }
+        if(isNaN(start) || isNaN(end) || isNaN(t)) { setOutput("⚠️ ERROR: Start(A), End(B), and Time(t) must be valid numbers."); return; }
         const res = start + (end - start) * t;
         setOutput(`Lerp (Linear Interpolation)\nStart Point (A): ${start}\nEnd Point (B): ${end}\nTime/Alpha (t): ${t}\n\n--- RESULT ---\nCurrent Interpolated Value: ${res.toFixed(4)}`);
         break;
 
       case 'fov':
         const hFov = parseFloat(input), aw = parseFloat(input2), ah = parseFloat(input3);
-        if(!hFov || !aw || !ah) { setOutput("Please enter Horizontal FOV, Aspect Width, and Height."); return; }
+        if(isNaN(hFov) || isNaN(aw) || isNaN(ah) || hFov <= 0 || hFov >= 180 || aw <= 0 || ah <= 0) { setOutput("⚠️ ERROR: Horiz. FOV must be 1-179°. Aspect W/H must be > 0."); return; }
         const vFov = 2 * Math.atan( Math.tan(hFov * Math.PI / 360) * (ah / aw) ) * 180 / Math.PI;
         setOutput(`Horizontal FOV: ${hFov}°\nScreen Aspect Ratio: ${aw}:${ah}\n\n--- RESULT ---\nVertical FOV: ${vFov.toFixed(2)}°\n\n*Many 3D engines (Unity) require Vertical FOV for camera setup.`);
         break;
 
       case 'tex-mem':
         const tw = parseFloat(input), th = parseFloat(input2), bpp = parseFloat(input3);
-        if(!tw || !th || !bpp) { setOutput("Please enter Width, Height, and Bits per Pixel."); return; }
+        if(isNaN(tw) || isNaN(th) || isNaN(bpp) || tw <= 0 || th <= 0 || bpp <= 0) { setOutput("⚠️ ERROR: Width, Height, and BPP must be > 0 (e.g. 1024, 1024, 32)."); return; }
         const bytes = tw * th * (bpp / 8);
         const mb = bytes / 1024 / 1024;
         setOutput(`Texture Map: ${tw} x ${th} px\nColor Depth: ${bpp}-Bit\n\n--- VRAM MEMORY USAGE ---\nMegabytes: ${mb.toFixed(4)} MB\nKilobytes: ${(bytes/1024).toFixed(2)} KB\nBytes: ${bytes.toLocaleString()} bytes`);
@@ -169,30 +173,28 @@ export default function Home() {
     }
   };
 
-  // 🛠️ TOOL METADATA (TAMAMEN GÜNCELLENDİ VE ÖLÇÜ BİRİMLERİ EKLENDİ)
   const toolData = {
-    "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Calculates in 4 currencies.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "stats-calc": { name: "Statistics Engine", how: "Enter comma or space-separated numbers (e.g., 10.5, 20, 35).", why: "Mean, Median, and Standard Deviation for rapid data balancing." },
+    "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
+    "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Data integration and parsing." },
     "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Rapid API endpoint testing and conversion." },
-    "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused local token decoding. No data sent to server." },
+    "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused local token decoding. No server calls." },
     "base64": { name: "Base64 Tool", how: "Paste regular text or Base64 string.", why: "Secure data encoding/decoding for web transmission." },
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
-    "diff-checker": { name: "Diff Checker", how: "Paste Original text on the left, New text on the right.", why: "Immediate version control and code comparison." },
+    "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
     "markdown": { name: "Markdown Preview", how: "Write Markdown formatting text.", why: "Real-time documentation rendering." },
-    "circle-fifths": { name: "Circle of Fifths", how: "Enter Musical Key as note name (e.g., C, F#, Bb).", why: "Calculates subdominant/dominant relations for harmony planning." },
-    "harmonics-calc": { name: "Upper Harmonics", how: "Enter base frequency in Hertz (Hz) (e.g., 55, 440).", why: "Identifies mathematical overtones for analog warmth synthesis." },
-    "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo in BPM (Beats Per Minute) (e.g., 120).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
-    "freq-note": { name: "Freq to Note", how: "Enter pitch frequency in Hertz (Hz) (e.g., 440.5).", why: "Detects nearest MIDI note and detune in cents for synth/kick tuning." },
-    "acoustic-calc": { name: "Room Treatment", how: "Enter Width, Length, and Height in Meters (m).", why: "Calculates total surface area (m²) and minimum acoustic panel requirements." },
-    // 🎮 GAME DEV TOOLS
-    "deg-rad": { name: "Degrees to Radians", how: "Enter rotation angle in Degrees (e.g., 90, 180).", why: "Game engines use Radians for vector math and Quaternions." },
-    "aspect-calc": { name: "Resolution Scaler", how: "Enter original Width/Height (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
-    "hex-shader": { name: "Color to Shader (0-1)", how: "Enter 6-digit Hex color code (e.g., #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 float format." },
-    "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Engine FPS (e.g., 60) and total Frames (e.g., 12).", why: "Calculates hitstun, animation durations, and network tick rates in milliseconds." },
-    "lerp-calc": { name: "Lerp Calculator", how: "Enter Start(A), End(B) points, and Time/Alpha(t: 0.0 - 1.0).", why: "Linear interpolation is the backbone of smooth movement and camera tracking." },
-    "fov-calc": { name: "FOV Converter", how: "Enter Horizontal FOV (Deg), and Aspect Ratio (e.g. 16, 9).", why: "Converts Horizontal FOV to Vertical FOV required by Unity/Unreal cameras." },
-    "tex-mem": { name: "Texture VRAM Calc", how: "Enter Width (px), Height (px), and Color Bits/Pixel (e.g., 32).", why: "Estimates the raw VRAM memory footprint (MB) of uncompressed textures." }
+    "circle-fifths": { name: "Circle of Fifths", how: "Enter Musical Key (String: C, F#, Bb).", why: "Calculates subdominant/dominant relations for harmony planning." },
+    "harmonics-calc": { name: "Upper Harmonics", how: "Enter base frequency (Range: 1 - 15000 Hz).", why: "Identifies mathematical overtones for analog warmth synthesis." },
+    "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
+    "freq-note": { name: "Freq to Note", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for synth/kick tuning." },
+    "acoustic-calc": { name: "Room Treatment", how: "Enter Width, Length, and Height (Range: > 0 Meters).", why: "Calculates surface area (m²) and minimum acoustic panel requirements." },
+    "deg-rad": { name: "Degrees to Radians", how: "Enter rotation angle (Range: Any +/- Degrees).", why: "Game engines use Radians for vector math and Quaternions." },
+    "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
+    "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
+    "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
+    "lerp-calc": { name: "Lerp Calculator", how: "Enter Start(A), End(B) points, and Time/Alpha(t).", why: "Linear interpolation is the backbone of smooth movement and camera tracking." },
+    "fov-calc": { name: "FOV Converter", how: "Enter Horiz. FOV (1-179°) and Aspect W/H ratio.", why: "Converts Horizontal FOV to Vertical FOV required by Unity/Unreal cameras." },
+    "tex-mem": { name: "Texture VRAM Calc", how: "Enter Texture Width (px), Height (px), and Color Depth (Bits).", why: "Estimates the raw VRAM memory footprint (MB) of uncompressed textures." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -200,12 +202,7 @@ export default function Home() {
       <div className="text-[10px] font-bold text-neutral-600 uppercase mb-2 px-4 tracking-tighter">{title}</div>
       {items.map(id => (
         <button key={id} onClick={() => {
-            setActiveTab(id); 
-            setInput(""); 
-            setInput2(""); 
-            setInput3(""); 
-            setOutput(""); 
-            setIsMenuOpen(false);
+            setActiveTab(id); setInput(""); setInput2(""); setInput3(""); setOutput(""); setIsMenuOpen(false);
           }} 
           className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all ${activeTab === id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800 active:bg-neutral-700'}`}>
           {toolData[id]?.name}
@@ -262,7 +259,7 @@ export default function Home() {
                     </select>
                     <div className="flex border border-neutral-800 rounded-xl bg-black overflow-hidden focus-within:border-emerald-500">
                       <span className="p-4 text-neutral-500 text-sm flex items-center bg-neutral-900/50">Days</span>
-                      <input type="number" min="1" className="w-full bg-transparent p-4 text-base font-mono text-emerald-400 outline-none" value={travelForm.days} onChange={(e) => setTravelForm({...travelForm, days: e.target.value})} />
+                      <input type="number" min="1" max="365" className="w-full bg-transparent p-4 text-base font-mono text-emerald-400 outline-none" value={travelForm.days} onChange={(e) => setTravelForm({...travelForm, days: e.target.value})} />
                     </div>
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, currency: e.target.value})}>
                       <option value="USD">💵 USD</option><option value="EUR">💶 EUR</option><option value="TRY">₺ TRY</option><option value="GBP">£ GBP</option>
@@ -279,43 +276,45 @@ export default function Home() {
                   </div>
                 ) : activeTab === "acoustic-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" placeholder="Width (m) e.g. 4" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="Length (m) e.g. 5.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" placeholder="Height (m) e.g. 2.8" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="0.1" step="0.1" placeholder="Width (m) e.g. 4.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="0.1" step="0.1" placeholder="Length (m) e.g. 6.0" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="0.1" step="0.1" placeholder="Height (m) e.g. 2.8" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "aspect-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" placeholder="Orig Width (px) e.g. 1920" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="Orig Height (px) e.g. 1080" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" placeholder="Target Width (px) e.g. 800" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="1" placeholder="Orig Width (px) e.g. 1920" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" placeholder="Orig Height (px) e.g. 1080" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="1" placeholder="Target Width (px) (Optional)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "fps-ms" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input value={input} type="number" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input} type="number" min="1" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="0" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
                 ) : activeTab === "lerp-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" placeholder="Start Val (A) e.g. 0" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="End Val (B) e.g. 100" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" placeholder="Time/Alpha (t) e.g. 0.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" step="0.1" placeholder="Start Val (A) e.g. 0" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" step="0.1" placeholder="End Val (B) e.g. 100" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" step="0.01" placeholder="Time/Alpha (t) e.g. 0.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "fov-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" placeholder="Horiz. FOV (Deg) e.g. 90" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="1" max="179" placeholder="Horiz. FOV (Deg) e.g. 90" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="1" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
                 ) : activeTab === "tex-mem" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" placeholder="Width (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" placeholder="Height (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" placeholder="Bits/Pixel (e.g. 32)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <input value={input} type="number" min="1" placeholder="Width (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" min="1" placeholder="Height (px) e.g. 2048" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input3} type="number" min="1" placeholder="Color Bits (e.g. 8, 16, 32)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
                   </div>
+                ) : activeTab === "circle-fifths" || activeTab === "hex-shader" ? (
+                  <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 ) : activeTab === "stats-calc" ? (
                   <textarea value={input} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500" placeholder="E.g. 10.5, 20.3, 45, 90..." onChange={(e) => setInput(e.target.value)} />
                 ) : (
-                  <input value={input} type="text" placeholder={toolData[activeTab]?.how || "Enter value..."} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                  <input value={input} type="number" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 )}
                 
                 <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
