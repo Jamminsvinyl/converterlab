@@ -16,7 +16,7 @@ export default function Home() {
   });
 
   const [landedForm, setLandedForm] = useState({
-    val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
+    route: "TR_EU", tradeType: "standard", val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
   });
 
   const destinations = [
@@ -50,20 +50,54 @@ export default function Home() {
       case 'landed':
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
-        const kg = parseFloat(landedForm.weight), frRate = parseFloat(landedForm.frRate);
-        const dutyRate = parseFloat(landedForm.duty), vatRate = parseFloat(landedForm.vat);
-        const extra = parseFloat(landedForm.extra) || 0;
+        const kg = parseFloat(landedForm.weight);
+        
+        let dutyRate = parseFloat(landedForm.duty) || 0;
+        let vatRate = parseFloat(landedForm.vat) || 0;
 
-        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(kg) || isNaN(frRate)) {
-          setOutput("⚠️ ERROR: Please fill in Goods Value, Box Dimensions (L,W,H), Weight, and Freight Rate.");
+        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(kg)) {
+          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Weight are mandatory fields.");
           return;
         }
 
-        // 💡 ZARİF SİGORTA MANTIĞI: Boş bırakılırsa veya metin girilirse otomatik %1 endüstri standardı alır.
-        const insInput = parseFloat(landedForm.ins);
-        const insRate = isNaN(insInput) ? 1.0 : insInput; 
-        const insAmt = val * (insRate / 100);
+        // --- 🤖 AI AUTO-FILL LOGIC (SANAL MÜŞAVİR) ---
+        let autoNotes = [];
+        
+        // 1. Freight Rate Auto-Fill
+        let frRate = parseFloat(landedForm.frRate);
+        if (isNaN(frRate) || frRate <= 0) {
+            if (landedForm.route === "TR_EU") frRate = 2.5;
+            else if (landedForm.route === "TR_US") frRate = 6.5;
+            else if (landedForm.route === "CN_TR") frRate = 8.0;
+            else frRate = 5.0;
+            autoNotes.push(`• Freight Rate: Estimated at ${frRate} ${landedForm.curr}/kg based on the selected route (${landedForm.route.replace('_', ' ➡️ ')}).`);
+        }
 
+        // 2. Insurance Auto-Fill
+        let insRate = parseFloat(landedForm.ins);
+        if (isNaN(insRate)) {
+            insRate = 1.0;
+            autoNotes.push(`• Insurance: Defaulted to industry standard 1.0% of Goods Value.`);
+        }
+        
+        // 3. Extra Fees Auto-Fill
+        let extra = parseFloat(landedForm.extra);
+        if (isNaN(extra)) {
+            if (landedForm.tradeType === "b2c") extra = 5.0; // Ufak posta sunum ücreti
+            else if (landedForm.tradeType === "ata_carnet") extra = 250.0; // ATA Karne tescil/oda masrafı
+            else extra = 150.0; // Standart gümrükçü + antrepo
+            autoNotes.push(`• Extra Fees: Estimated at ${extra} ${landedForm.curr} for standard ${landedForm.tradeType.toUpperCase()} customs clearance & storage.`);
+        }
+
+        // --- HESAPLAMA MOTORU ---
+        let tradeMsg = `🏦 CUSTOMS BASIS (CIF VALUE)\n`;
+        if (landedForm.tradeType === "ata_carnet") {
+            dutyRate = 0;
+            vatRate = 0;
+            tradeMsg = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT) APPLIED\n* Duty & VAT are exempted for temporary exhibition goods.\n\n🏦 CUSTOMS BASIS (CIF VALUE)\n`;
+        }
+
+        const insAmt = val * (insRate / 100);
         const volKg = (l * w * h) / 5000;
         const chargeableKg = Math.max(kg, volKg);
         const freightCost = chargeableKg * frRate;
@@ -77,20 +111,25 @@ export default function Home() {
         const fmt = (amt) => new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(amt);
 
         let warnMsg = "";
-        if (dutyRate >= 30 && val > 30 && (curr === "EUR" || curr === "USD")) {
-          warnMsg = "\n\n⚠️ WARNING: B2C personal imports above 30 EUR/USD limit may be subject to commercial customs procedures and brokerage fees in TR.";
+        if (dutyRate >= 30 && val > 30 && landedForm.tradeType === "b2c" && (curr === "EUR" || curr === "USD")) {
+          warnMsg = "\n⚠️ WARNING: B2C personal imports above 30 EUR/USD limit may be subject to commercial customs procedures in TR.";
+        }
+
+        let autoFillText = "";
+        if (autoNotes.length > 0) {
+            autoFillText = `\n\n💡 AUTO-ESTIMATES APPLIED\n------------------------------------------\nSince some fields were left blank, the system applied standard industry estimates to complete the calculation:\n${autoNotes.join('\n')}\n* For exact results, please input your real quotes from your forwarder and broker.`;
         }
 
         setOutput(
-          `🚢 GLOBAL LANDED COST & CUSTOMS DECLARATION\n` +
+          `🚢 GLOBAL LANDED COST REPORT\n` +
           `==========================================\n` +
-          `📦 FREIGHT CALCULATION\n` +
+          `📦 FREIGHT CALCULATION (Route: ${landedForm.route.replace('_', ' ➡️ ')})\n` +
           `Dimensions    : ${l}x${w}x${h} cm\n` +
           `Actual Weight : ${kg.toFixed(2)} kg\n` +
           `Volumetric Wt : ${volKg.toFixed(2)} kg (IATA Divisor: 5000)\n` +
           `Chargeable Wt : ${chargeableKg.toFixed(2)} kg\n` +
           `Freight Cost  : ${fmt(freightCost)} (${fmt(frRate)}/kg)\n\n` +
-          `🏦 CUSTOMS BASIS (CIF VALUE)\n` +
+          tradeMsg +
           `Goods Value   : ${fmt(val)}\n` +
           `Insurance     : ${fmt(insAmt)} (${insRate}% of Goods)\n` +
           `CIF Matrah    : ${fmt(cif)}\n\n` +
@@ -100,7 +139,7 @@ export default function Home() {
           `VAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\n` +
           `Broker/Extra  : ${fmt(extra)}\n` +
           `------------------------------------------\n` +
-          `💰 TOTAL LANDED COST: ${fmt(totalLanded)}` + warnMsg
+          `💰 TOTAL LANDED COST: ${fmt(totalLanded)}\n` + warnMsg + autoFillText
         );
         break;
 
@@ -258,7 +297,7 @@ export default function Home() {
 
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Enter Cargo Dimensions (cm), Weight, and Rates.", why: "Automatically handles IATA Volumetric Weight and complex CIF Customs Duties." },
+    "landed-cost": { name: "Global Landed Cost", how: "Enter Dimensions/Value. Leave Freight/Extra blank to Auto-Estimate.", why: "Self-completing simulator for CIF duties, ATA Carnets, and freight." },
     "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Data integration and parsing." },
     "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Rapid API endpoint testing and conversion." },
@@ -337,31 +376,83 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI (PLACEHOLDERS GÜNCELLENDİ) */}
+                {/* 🚢 GLOBAL LANDED COST UI - AUTO-FILL GÜNCELLEMESİ */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value (e.g. 1500)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
-                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, curr: e.target.value})}>
-                      <option value="USD">💵 USD</option><option value="EUR">💶 EUR</option><option value="GBP">£ GBP</option><option value="TRY">₺ TRY</option>
-                    </select>
-                    <input value={landedForm.l} type="number" min="0" step="any" placeholder="Length (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
-                    <input value={landedForm.w} type="number" min="0" step="any" placeholder="Width (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
-                    <input value={landedForm.h} type="number" min="0" step="any" placeholder="Height (cm)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
-                    <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Weight (kg)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
-                    <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate/kg (e.g. 5.5)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-2" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
                     
-                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-2" onChange={(e) => setLandedForm({...landedForm, duty: e.target.value})}>
-                      <option value="20">🌐 General B2B Import (20%)</option>
-                      <option value="0">🇪🇺 EU Origin ATR (0%)</option>
-                      <option value="30">📦 B2C EU Origin Limit (30%)</option>
-                      <option value="60">📦 B2C Non-EU Limit (60%)</option>
-                    </select>
+                    <div className="md:col-span-2">
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
+                        <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
+                        <option value="TR_US">🇹🇷 TR ➡️ 🇺🇸 US (Export)</option>
+                        <option value="CN_TR">🇨🇳 CN ➡️ 🇹🇷 TR (Import)</option>
+                        <option value="GLOBAL">🌍 Global ➡️ Global (Standard)</option>
+                      </select>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Select route for auto-freight estimation.</p>
+                    </div>
                     
-                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, vat: e.target.value})}>
-                      <option value="20">VAT 20%</option><option value="10">VAT 10%</option><option value="1">VAT 1%</option><option value="0">VAT 0%</option>
-                    </select>
-                    <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance % (Blank = 1%)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
-                    <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Broker/Storage (e.g. 150)" className="bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 md:col-span-4" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                    <div className="md:col-span-2">
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, tradeType: e.target.value})}>
+                        <option value="standard">📦 Standard Permanent Import/Export</option>
+                        <option value="ata_carnet">🎟️ ATA Carnet / Exhibition (Temp Export)</option>
+                        <option value="b2c">🛒 B2C E-Commerce (Personal)</option>
+                      </select>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Changes duty logic and auto-extra fees.</p>
+                    </div>
+
+                    <div className="md:col-span-2 flex gap-2">
+                      <div className="flex-1">
+                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                        <p className="text-[9px] text-neutral-500 mt-1 ml-2">FOB Invoice value (Required).</p>
+                      </div>
+                      <div>
+                        <select className="h-[54px] bg-black border border-neutral-800 rounded-xl p-2 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, curr: e.target.value})}>
+                          <option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="TRY">TRY</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Wt *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Gross weight in kg (Req).</p>
+                    </div>
+
+                    <div>
+                      <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight/kg (Leave Blank for Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
+                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank for smart auto-estimation.</p>
+                    </div>
+
+                    <div className="md:col-span-2 flex gap-2">
+                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                    </div>
+
+                    <div>
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, duty: e.target.value})}>
+                        <option value="20">Duty: Gen. Import 20%</option>
+                        <option value="0">Duty: EU Origin 0%</option>
+                        <option value="30">Duty: B2C EU 30%</option>
+                        <option value="60">Duty: B2C Other 60%</option>
+                      </select>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Customs tax %.</p>
+                    </div>
+                    
+                    <div>
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, vat: e.target.value})}>
+                        <option value="20">VAT 20%</option><option value="10">VAT 10%</option><option value="1">VAT 1%</option><option value="0">VAT 0%</option>
+                      </select>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Value added tax %.</p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance % (Leave Blank for Auto 1%)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
+                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank to use 1% industry standard.</p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees (Leave Blank for Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Broker/Storage. Leave blank for auto-estimation.</p>
+                    </div>
                   </div>
 
                 ) : activeTab === "travel-calc" ? (
@@ -457,7 +548,6 @@ export default function Home() {
           
         </div>
         
-        {/* 🔥 FOOTER WITH PRIVACY & TERMS LINKS */}
         <footer className="p-6 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center text-[10px] text-neutral-600 px-6 md:px-12 gap-4 mt-auto font-mono">
           <div>Analog heart, digital precision. © 2026 ConverterLab</div>
           <div className="flex gap-6">
