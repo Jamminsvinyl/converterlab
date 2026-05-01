@@ -15,10 +15,10 @@ export default function Home() {
     destVal: "1.0", destName: "Global Average", days: "1", hotel: "1", food: "70", transport: "15", currency: "USD"
   });
 
-  // 🚢 YENİ: NAKLİYE MODU (freightMethod) EKLENDİ
-  const [landedForm, setLandedForm] = useState({
+  const initLandedForm = {
     route: "TR_EU", tradeType: "standard", freightMethod: "air", val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
-  });
+  };
+  const [landedForm, setLandedForm] = useState(initLandedForm);
 
   const destinations = [
     { name: "🌍 Global Average", val: "1.0" },
@@ -57,7 +57,7 @@ export default function Home() {
         let vatRate = parseFloat(landedForm.vat) || 0;
 
         if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(kg)) {
-          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Weight are mandatory fields.");
+          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Actual Weight are mandatory fields.");
           return;
         }
 
@@ -67,7 +67,6 @@ export default function Home() {
         let transitDays = "";
         let dispatchNote = "";
 
-        // Nakliye tipine göre süre, kural ve otomatik fiyatlandırma
         if (landedForm.freightMethod === "air") {
             transitDays = "1 - 5 Days";
             dispatchNote = "Airway Bill (AWB) cutoff is usually 24-48h prior to flight departure.";
@@ -119,7 +118,7 @@ export default function Home() {
         if (landedForm.tradeType === "ata_carnet") {
             dutyRate = 0;
             vatRate = 0;
-            tradeMsg = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT) APPLIED\n* Duty & VAT are exempted for temporary exhibition goods.\n\n🏦 CUSTOMS BASIS (CIF VALUE)\n`;
+            tradeMsg = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT) APPLIED\n* Duty & VAT are exempted for temporary exhibition goods returning in original state.\n\n🏦 CUSTOMS BASIS (CIF VALUE)\n`;
         }
 
         const insAmt = val * (insRate / 100);
@@ -355,7 +354,11 @@ export default function Home() {
       <div className="text-[10px] font-bold text-neutral-600 uppercase mb-2 px-4 tracking-tighter">{title}</div>
       {items.map(id => (
         <button key={id} onClick={() => {
-            setActiveTab(id); setInput(""); setInput2(""); setInput3(""); setOutput(""); setIsMenuOpen(false);
+            setActiveTab(id); 
+            setInput(""); setInput2(""); setInput3(""); 
+            setOutput(""); 
+            setLandedForm(initLandedForm); // Menü değiştiğinde gümrük motorunu sıfırla
+            setIsMenuOpen(false);
           }} 
           className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all ${activeTab === id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800 active:bg-neutral-700'}`}>
           {toolData[id]?.name}
@@ -405,9 +408,9 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI - NAKLİYE MODU EKLENDİ */}
+                {/* 🚢 GLOBAL LANDED COST UI - KISA PLACEHOLDERS & MOBİL GRID */}
                 {activeTab === "landed-cost" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     
                     <div className="md:col-span-1 lg:col-span-2">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
@@ -416,16 +419,16 @@ export default function Home() {
                         <option value="CN_TR">🇨🇳 CN ➡️ 🇹🇷 TR (Import)</option>
                         <option value="GLOBAL">🌍 Global ➡️ Global (Standard)</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Select route.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Select route for auto-freight estimation.</p>
                     </div>
-
+                    
                     <div className="md:col-span-1">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, tradeType: e.target.value})}>
                         <option value="standard">📦 Standard Trade</option>
                         <option value="ata_carnet">🎟️ ATA Carnet</option>
                         <option value="b2c">🛒 B2C Personal</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Customs logic.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs logic.</p>
                     </div>
 
                     <div className="md:col-span-1">
@@ -434,13 +437,13 @@ export default function Home() {
                         <option value="sea">🚢 Sea Freight</option>
                         <option value="road">🚛 Road Freight</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Transport method.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Transport method.</p>
                     </div>
 
-                    <div className="md:col-span-2 flex gap-2">
+                    <div className="md:col-span-1 lg:col-span-2 flex gap-2">
                       <div className="flex-1">
-                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
-                        <p className="text-[9px] text-neutral-500 mt-1 ml-2">FOB Invoice value (Required).</p>
+                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">FOB Invoice value (Req).</p>
                       </div>
                       <div>
                         <select className="h-[54px] bg-black border border-neutral-800 rounded-xl p-2 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, curr: e.target.value})}>
@@ -450,19 +453,20 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Wt *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Gross weight in kg (Req).</p>
+                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Weight" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Gross weight in kg (Req).</p>
                     </div>
 
                     <div>
-                      <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate/kg" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
-                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank for auto-estimate.</p>
+                      <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Rate/kg. Leave blank for auto.</p>
                     </div>
 
-                    <div className="md:col-span-2 flex gap-2">
-                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
-                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
-                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm) *" className="w-1/3 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                    {/* L W H MOBİLDE EZİLMESİN DİYE GRID YAPILDI */}
+                    <div className="md:col-span-1 lg:col-span-1 grid grid-cols-3 gap-2">
+                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
                     </div>
 
                     <div>
@@ -472,24 +476,24 @@ export default function Home() {
                         <option value="30">Duty: B2C EU 30%</option>
                         <option value="60">Duty: B2C Other 60%</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Customs tax %.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs tax %.</p>
                     </div>
                     
                     <div>
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, vat: e.target.value})}>
                         <option value="20">VAT 20%</option><option value="10">VAT 10%</option><option value="1">VAT 1%</option><option value="0">VAT 0%</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Value added tax %.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Value added tax %.</p>
                     </div>
 
-                    <div className="md:col-span-2">
-                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance % (Blank = 1%)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
-                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank to use 1% standard.</p>
+                    <div>
+                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance %" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Leave blank to use standard 1%.</p>
                     </div>
 
-                    <div className="md:col-span-2">
-                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees (Blank = Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
-                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Broker/Storage. Leave blank for auto-estimation.</p>
+                    <div className="md:col-span-1 lg:col-span-2">
+                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Broker/Storage amt. Blank = Auto.</p>
                     </div>
                   </div>
 
@@ -508,8 +512,9 @@ export default function Home() {
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, hotel: e.target.value})}>
                       <option value="1">🏨 3★ Economy</option><option value="1.8">🏨 4★ Business</option><option value="3.5">🏨 5★ Executive</option>
                     </select>
-                    <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, food: e.target.value})}>
-                      <option value="30">🍔 Fast Food</option><option value="70" selected>🍽️ Standard</option><option value="150">🍷 Fine Dining</option>
+                    {/* YENİ: DEFAULTVALUE KULLANILDI, REACT SELECTED HATASI GİDERİLDİ */}
+                    <select defaultValue="70" className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, food: e.target.value})}>
+                      <option value="30">🍔 Fast Food</option><option value="70">🍽️ Standard</option><option value="150">🍷 Fine Dining</option>
                     </select>
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, transport: e.target.value})}>
                       <option value="15">🚇 Public Transport</option><option value="50">🚕 Taxi / Uber</option><option value="70">🚗 Rent a Car</option>
