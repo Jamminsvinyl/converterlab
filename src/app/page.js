@@ -15,8 +15,9 @@ export default function Home() {
     destVal: "1.0", destName: "Global Average", days: "1", hotel: "1", food: "70", transport: "15", currency: "USD"
   });
 
+  // 🚢 YENİ: NAKLİYE MODU (freightMethod) EKLENDİ
   const [landedForm, setLandedForm] = useState({
-    route: "TR_EU", tradeType: "standard", val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
+    route: "TR_EU", tradeType: "standard", freightMethod: "air", val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
   });
 
   const destinations = [
@@ -60,36 +61,60 @@ export default function Home() {
           return;
         }
 
-        // --- 🤖 AI AUTO-FILL LOGIC (SANAL MÜŞAVİR) ---
+        // --- 🤖 AI AUTO-FILL & LOGISTICS LOGIC ---
         let autoNotes = [];
-        
-        // 1. Freight Rate Auto-Fill
         let frRate = parseFloat(landedForm.frRate);
-        if (isNaN(frRate) || frRate <= 0) {
-            if (landedForm.route === "TR_EU") frRate = 2.5;
-            else if (landedForm.route === "TR_US") frRate = 6.5;
-            else if (landedForm.route === "CN_TR") frRate = 8.0;
-            else frRate = 5.0;
-            autoNotes.push(`• Freight Rate: Estimated at ${frRate} ${landedForm.curr}/kg based on the selected route (${landedForm.route.replace('_', ' ➡️ ')}).`);
+        let transitDays = "";
+        let dispatchNote = "";
+
+        // Nakliye tipine göre süre, kural ve otomatik fiyatlandırma
+        if (landedForm.freightMethod === "air") {
+            transitDays = "1 - 5 Days";
+            dispatchNote = "Airway Bill (AWB) cutoff is usually 24-48h prior to flight departure.";
+            if (isNaN(frRate) || frRate <= 0) {
+                if (landedForm.route === "TR_EU") frRate = 4.5;
+                else if (landedForm.route === "TR_US") frRate = 6.5;
+                else if (landedForm.route === "CN_TR") frRate = 8.0;
+                else frRate = 5.0;
+            }
+        } else if (landedForm.freightMethod === "sea") {
+            transitDays = "20 - 45 Days";
+            dispatchNote = "Bill of Lading (B/L) closing is usually 3-5 days before vessel departure.";
+            if (isNaN(frRate) || frRate <= 0) {
+                if (landedForm.route === "TR_EU") frRate = 0.5;
+                else if (landedForm.route === "TR_US") frRate = 1.2;
+                else if (landedForm.route === "CN_TR") frRate = 0.8;
+                else frRate = 1.0;
+            }
+        } else if (landedForm.freightMethod === "road") {
+            transitDays = "7 - 14 Days";
+            dispatchNote = "CMR/Truck dispatch requires booking and loading 2-3 days in advance.";
+            if (isNaN(frRate) || frRate <= 0) {
+                if (landedForm.route === "TR_EU") frRate = 1.5;
+                else if (landedForm.route === "TR_US") { frRate = 6.5; transitDays = "N/A (Use Air/Sea)"; }
+                else if (landedForm.route === "CN_TR") { frRate = 3.5; transitDays = "18 - 25 Days"; }
+                else frRate = 2.0;
+            }
         }
 
-        // 2. Insurance Auto-Fill
+        if (isNaN(parseFloat(landedForm.frRate)) || parseFloat(landedForm.frRate) <= 0) {
+             autoNotes.push(`• Freight Rate: Estimated at ${frRate} ${landedForm.curr}/kg based on ${landedForm.freightMethod.toUpperCase()} freight for the selected route.`);
+        }
+
         let insRate = parseFloat(landedForm.ins);
         if (isNaN(insRate)) {
             insRate = 1.0;
             autoNotes.push(`• Insurance: Defaulted to industry standard 1.0% of Goods Value.`);
         }
         
-        // 3. Extra Fees Auto-Fill
         let extra = parseFloat(landedForm.extra);
         if (isNaN(extra)) {
-            if (landedForm.tradeType === "b2c") extra = 5.0; // Ufak posta sunum ücreti
-            else if (landedForm.tradeType === "ata_carnet") extra = 250.0; // ATA Karne tescil/oda masrafı
-            else extra = 150.0; // Standart gümrükçü + antrepo
+            if (landedForm.tradeType === "b2c") extra = 5.0;
+            else if (landedForm.tradeType === "ata_carnet") extra = 250.0;
+            else extra = 150.0;
             autoNotes.push(`• Extra Fees: Estimated at ${extra} ${landedForm.curr} for standard ${landedForm.tradeType.toUpperCase()} customs clearance & storage.`);
         }
 
-        // --- HESAPLAMA MOTORU ---
         let tradeMsg = `🏦 CUSTOMS BASIS (CIF VALUE)\n`;
         if (landedForm.tradeType === "ata_carnet") {
             dutyRate = 0;
@@ -117,12 +142,16 @@ export default function Home() {
 
         let autoFillText = "";
         if (autoNotes.length > 0) {
-            autoFillText = `\n\n💡 AUTO-ESTIMATES APPLIED\n------------------------------------------\nSince some fields were left blank, the system applied standard industry estimates to complete the calculation:\n${autoNotes.join('\n')}\n* For exact results, please input your real quotes from your forwarder and broker.`;
+            autoFillText = `\n\n💡 AUTO-ESTIMATES APPLIED\n------------------------------------------\nSince some fields were left blank, the system applied standard industry estimates:\n${autoNotes.join('\n')}\n* For exact results, input real quotes from your forwarder.`;
         }
 
         setOutput(
           `🚢 GLOBAL LANDED COST REPORT\n` +
           `==========================================\n` +
+          `⏱️ TRANSIT & LOGISTICS\n` +
+          `Method        : ${landedForm.freightMethod.toUpperCase()} FREIGHT\n` +
+          `Est. Transit  : ${transitDays}\n` +
+          `Dispatch Rule : ${dispatchNote}\n\n` +
           `📦 FREIGHT CALCULATION (Route: ${landedForm.route.replace('_', ' ➡️ ')})\n` +
           `Dimensions    : ${l}x${w}x${h} cm\n` +
           `Actual Weight : ${kg.toFixed(2)} kg\n` +
@@ -297,7 +326,7 @@ export default function Home() {
 
   const toolData = {
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Enter Dimensions/Value. Leave Freight/Extra blank to Auto-Estimate.", why: "Self-completing simulator for CIF duties, ATA Carnets, and freight." },
+    "landed-cost": { name: "Global Landed Cost", how: "Select Freight Method & Trade Type. Blank fields will auto-estimate.", why: "AI-assisted broker simulator for transit times, CIF duties, and ATA Carnets." },
     "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Data integration and parsing." },
     "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Rapid API endpoint testing and conversion." },
@@ -376,27 +405,36 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI - AUTO-FILL GÜNCELLEMESİ */}
+                {/* 🚢 GLOBAL LANDED COST UI - NAKLİYE MODU EKLENDİ */}
                 {activeTab === "landed-cost" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-1 lg:col-span-2">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
                         <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
                         <option value="TR_US">🇹🇷 TR ➡️ 🇺🇸 US (Export)</option>
                         <option value="CN_TR">🇨🇳 CN ➡️ 🇹🇷 TR (Import)</option>
                         <option value="GLOBAL">🌍 Global ➡️ Global (Standard)</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Select route for auto-freight estimation.</p>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Select route.</p>
                     </div>
-                    
-                    <div className="md:col-span-2">
+
+                    <div className="md:col-span-1">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, tradeType: e.target.value})}>
-                        <option value="standard">📦 Standard Permanent Import/Export</option>
-                        <option value="ata_carnet">🎟️ ATA Carnet / Exhibition (Temp Export)</option>
-                        <option value="b2c">🛒 B2C E-Commerce (Personal)</option>
+                        <option value="standard">📦 Standard Trade</option>
+                        <option value="ata_carnet">🎟️ ATA Carnet</option>
+                        <option value="b2c">🛒 B2C Personal</option>
                       </select>
-                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Changes duty logic and auto-extra fees.</p>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Customs logic.</p>
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, freightMethod: e.target.value})}>
+                        <option value="air">✈️ Air Freight</option>
+                        <option value="sea">🚢 Sea Freight</option>
+                        <option value="road">🚛 Road Freight</option>
+                      </select>
+                      <p className="text-[9px] text-neutral-500 mt-1 ml-2">Transport method.</p>
                     </div>
 
                     <div className="md:col-span-2 flex gap-2">
@@ -417,8 +455,8 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight/kg (Leave Blank for Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
-                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank for smart auto-estimation.</p>
+                      <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate/kg" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
+                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank for auto-estimate.</p>
                     </div>
 
                     <div className="md:col-span-2 flex gap-2">
@@ -445,12 +483,12 @@ export default function Home() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance % (Leave Blank for Auto 1%)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
-                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank to use 1% industry standard.</p>
+                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance % (Blank = 1%)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
+                      <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Leave blank to use 1% standard.</p>
                     </div>
 
                     <div className="md:col-span-2">
-                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees (Leave Blank for Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees (Blank = Auto)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
                       <p className="text-[9px] text-emerald-600/70 mt-1 ml-2">Broker/Storage. Leave blank for auto-estimation.</p>
                     </div>
                   </div>
