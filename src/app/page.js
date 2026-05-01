@@ -48,6 +48,7 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
+      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU
       case 'landed':
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
@@ -61,7 +62,6 @@ export default function Home() {
           return;
         }
 
-        // --- 🤖 AI AUTO-FILL & LOGISTICS LOGIC ---
         let autoNotes = [];
         let frRate = parseFloat(landedForm.frRate);
         let transitDays = "";
@@ -200,6 +200,89 @@ export default function Home() {
         setOutput(`Data Points: ${nums.length}\nMean (Avg): ${mean.toFixed(2)}\nMedian: ${median}\nMin/Max: ${nums[0]} / ${nums[nums.length-1]}\nStandard Deviation: ${stdDev.toFixed(2)}`);
         break;
 
+      // 🎮 GAME DEV: YENİ ARAÇLAR
+      case 'pixel':
+        const bW = parseFloat(input);
+        const bH = parseFloat(input2);
+        const targetRatioStr = input3.trim() || "16:9";
+        
+        if (isNaN(bW) || isNaN(bH) || bW <= 0 || bH <= 0) {
+            setOutput("⚠️ ERROR: Please enter a valid Base Width and Height (e.g., 1920 and 1080)."); return;
+        }
+        
+        const ratioParts = targetRatioStr.split(':');
+        if (ratioParts.length !== 2 || isNaN(parseFloat(ratioParts[0])) || isNaN(parseFloat(ratioParts[1]))) {
+            setOutput("⚠️ ERROR: Target Ratio must be in 'W:H' format (e.g., 21:9 or 4:3)."); return;
+        }
+        
+        const tRW = parseFloat(ratioParts[0]);
+        const tRH = parseFloat(ratioParts[1]);
+        const baseRatio = bW / bH;
+        const targetRatio = tRW / tRH;
+
+        let scaleResult = "";
+        let advice = "";
+        
+        if (Math.abs(baseRatio - targetRatio) < 0.01) {
+            scaleResult = "🟢 Perfect Match!";
+            advice = "No scaling issues. UI will fit perfectly without distortion.";
+        } else if (targetRatio > baseRatio) {
+            scaleResult = "🟡 Pillarboxing Occurs (Black Bars on Left/Right)";
+            advice = "Target screen is WIDER than base UI (e.g., Ultrawide). Ensure UI elements are anchored to the edges (Left/Right) or they will float in the middle.";
+        } else {
+            scaleResult = "🔴 Letterboxing Occurs (Black Bars on Top/Bottom)";
+            advice = "Target screen is TALLER than base UI (e.g., iPad 4:3). Make sure your top and bottom UI elements aren't anchored absolutely, or they might overlap vertically.";
+        }
+        
+        setOutput(`🎮 PIXEL PERFECT UI SCALER\n==========================================\nBase Resolution : ${bW}x${bH} (Ratio: ${baseRatio.toFixed(3)})\nTarget Screen   : ${targetRatioStr} (Ratio: ${targetRatio.toFixed(3)})\n\n--- SCALE RESULT ---\n${scaleResult}\n\n💡 Dev Advice:\n${advice}`);
+        break;
+
+      case 'shader':
+        const xVal = parseFloat(input);
+        const easeType = input2 || "smoothstep";
+        const exponent = parseFloat(input3) || 2;
+        
+        if (isNaN(xVal) || xVal < 0 || xVal > 1) {
+            setOutput("⚠️ ERROR: Input X must be between 0.0 and 1.0."); return;
+        }
+        
+        let yVal = 0;
+        if (easeType === "smoothstep") {
+            yVal = xVal * xVal * (3.0 - 2.0 * xVal);
+        } else if (easeType === "pow") {
+            yVal = Math.pow(xVal, exponent);
+        } else if (easeType === "sine") {
+            yVal = Math.sin(xVal * Math.PI / 2); 
+        }
+
+        const barLength = 30;
+        const filled = Math.max(0, Math.min(barLength, Math.round(yVal * barLength)));
+        const bar = "█".repeat(filled) + "░".repeat(barLength - filled);
+
+        setOutput(`🔮 SHADER EASING VISUALIZER\n==========================================\nFunction : ${easeType.toUpperCase()}\nInput X  : ${xVal.toFixed(3)}\n\n--- MATH RESULT ---\nOutput Y : ${yVal.toFixed(4)}\n\nCurve Vis: [${bar}]`);
+        break;
+
+      case 'dot':
+        const surfAngle = parseFloat(input);
+        const lightAngle = parseFloat(input2);
+        if (isNaN(surfAngle) || isNaN(lightAngle)) {
+            setOutput("⚠️ ERROR: Please enter valid angles in degrees (e.g., 0 and 45)."); return;
+        }
+        
+        const diffRad = (lightAngle - surfAngle) * (Math.PI / 180);
+        const dotProd = Math.cos(diffRad);
+        const brightness = Math.max(0, dotProd);
+
+        let lightDesc = "";
+        if (brightness > 0.9) lightDesc = "☀️ Direct Hit (Max Brightness / Specular)";
+        else if (brightness > 0.4) lightDesc = "🌤️ Half Lit (Diffuse Area)";
+        else if (brightness > 0.0) lightDesc = "⛅ Penumbra (Shadow Edge)";
+        else lightDesc = "🌑 Dark (Self-shadowed / Backface)";
+
+        setOutput(`🔦 VECTOR DOT PRODUCT (LIGHTING)\n==========================================\nSurface Normal Angle : ${surfAngle}°\nLight Source Angle   : ${lightAngle}°\n\n--- CALCULATION ---\nDot Product (Cos θ)  : ${dotProd.toFixed(4)}\nClamped Brightness   : ${brightness.toFixed(4)}\n\n💡 Shader State:\n${lightDesc}\n\n*Note: In shaders, dot(N, L) < 0 means the light hits the back of the object.`);
+        break;
+
+      // 🎶 MÜZİK VE DİĞER ARAÇLAR
       case 'freq':
         const hz = parseFloat(input);
         if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
@@ -295,28 +378,6 @@ export default function Home() {
         setOutput(`Target Engine Speed: ${fps} FPS\nAnimation Frame Count: ${frames} frames\n\n--- DURATION ---\nMilliseconds: ${ms.toFixed(2)} ms\nSeconds: ${(ms/1000).toFixed(4)} s`);
         break;
 
-      case 'lerp':
-        const start = parseFloat(input), end = parseFloat(input2), t = parseFloat(input3);
-        if(isNaN(start) || isNaN(end) || isNaN(t)) { setOutput("⚠️ ERROR: Start(A), End(B), and Time(t) must be valid numbers."); return; }
-        const res = start + (end - start) * t;
-        setOutput(`Lerp (Linear Interpolation)\nStart Point (A): ${start}\nEnd Point (B): ${end}\nTime/Alpha (t): ${t}\n\n--- RESULT ---\nCurrent Interpolated Value: ${res.toFixed(4)}`);
-        break;
-
-      case 'fov':
-        const hFov = parseFloat(input), aw = parseFloat(input2), ah = parseFloat(input3);
-        if(isNaN(hFov) || isNaN(aw) || isNaN(ah) || hFov <= 0 || hFov >= 180 || aw <= 0 || ah <= 0) { setOutput("⚠️ ERROR: Horiz. FOV must be 1-179°. Aspect W/H must be > 0."); return; }
-        const vFov = 2 * Math.atan( Math.tan(hFov * Math.PI / 360) * (ah / aw) ) * 180 / Math.PI;
-        setOutput(`Horizontal FOV: ${hFov}°\nScreen Aspect Ratio: ${aw}:${ah}\n\n--- RESULT ---\nVertical FOV: ${vFov.toFixed(2)}°\n\n*Many 3D engines (Unity) require Vertical FOV for camera setup.`);
-        break;
-
-      case 'delta':
-        const speed = parseFloat(input), engineFps = parseFloat(input2);
-        if(isNaN(speed) || isNaN(engineFps) || engineFps <= 0) { setOutput("⚠️ ERROR: Speed must be a number, and Target FPS must be greater than 0."); return; }
-        const unitsPerFrame = speed / engineFps;
-        const frameTimeMs = 1000 / engineFps;
-        setOutput(`Movement Speed: ${speed} Units/sec\nTarget Framerate: ${engineFps} FPS\n\n--- DELTA TIME RESULT ---\nMovement per Frame: ${unitsPerFrame.toFixed(4)} Units\nFrame Duration (DeltaTime): ${frameTimeMs.toFixed(2)} ms`);
-        break;
-
       default: 
         setOutput("Ready to process..."); 
         break;
@@ -344,9 +405,10 @@ export default function Home() {
     "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
     "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
     "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
-    "lerp-calc": { name: "Lerp Calculator", how: "Enter Start(A), End(B) points, and Time/Alpha(t).", why: "Linear interpolation is the backbone of smooth movement and camera tracking." },
-    "fov-calc": { name: "FOV Converter", how: "Enter Horiz. FOV (1-179°) and Aspect W/H ratio.", why: "Converts Horizontal FOV to Vertical FOV required by Unity/Unreal cameras." },
-    "delta-time": { name: "Delta Time Calc", how: "Enter Speed (Units/sec) and Target Engine FPS.", why: "Calculates exact movement step per frame for frame-rate independent physics." }
+    // 🎮 YENİ GAME DEV METADATASI
+    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base Resolution (W/H) and Target Screen Ratio (e.g. 21:9).", why: "Calculates letterboxing and safe zones to prevent UI stretching on ultrawide or iPad screens." },
+    "shader-easing": { name: "Shader Easing Visualizer", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) used for smooth animations and glowing shaders." },
+    "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math. Calculates brightness based on light hitting a surface normal." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -357,7 +419,7 @@ export default function Home() {
             setActiveTab(id); 
             setInput(""); setInput2(""); setInput3(""); 
             setOutput(""); 
-            setLandedForm(initLandedForm); // Menü değiştiğinde gümrük motorunu sıfırla
+            setLandedForm(initLandedForm);
             setIsMenuOpen(false);
           }} 
           className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all ${activeTab === id ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' : 'text-neutral-400 hover:bg-neutral-800 active:bg-neutral-700'}`}>
@@ -376,7 +438,8 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
+          {/* YENİ GAME DEV LİSTESİ */}
+          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       </aside>
 
@@ -389,7 +452,7 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"]} />
+          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       )}
 
@@ -405,10 +468,10 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "lerp-calc", "fov-calc", "delta-time"].includes(activeTab) ? (
+            {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI - KISA PLACEHOLDERS & MOBİL GRID */}
+                {/* 🚢 GLOBAL LANDED COST UI */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     
@@ -462,7 +525,6 @@ export default function Home() {
                       <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Rate/kg. Leave blank for auto.</p>
                     </div>
 
-                    {/* L W H MOBİLDE EZİLMESİN DİYE GRID YAPILDI */}
                     <div className="md:col-span-1 lg:col-span-1 grid grid-cols-3 gap-2">
                         <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
                         <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
@@ -497,6 +559,56 @@ export default function Home() {
                     </div>
                   </div>
 
+                {/* 🎮 YENİ GAME DEV ARAÇLARI UI */}
+                ) : activeTab === "pixel-perfect" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <input value={input} type="number" min="1" step="1" placeholder="Base W (e.g. 1920)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Width</p>
+                    </div>
+                    <div>
+                        <input value={input2} type="number" min="1" step="1" placeholder="Base H (e.g. 1080)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Height</p>
+                    </div>
+                    <div>
+                        <input value={input3} type="text" placeholder="Target Ratio (e.g. 21:9)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Player's screen ratio</p>
+                    </div>
+                  </div>
+
+                ) : activeTab === "shader-easing" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <input value={input} type="number" min="0" max="1" step="0.01" placeholder="Input X (0.0 to 1.0)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Time or Base Value</p>
+                    </div>
+                    <div>
+                        <select value={input2} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)}>
+                            <option value="smoothstep">Smoothstep(0,1,x)</option>
+                            <option value="pow">Pow(x, Exp)</option>
+                            <option value="sine">Sine Ease-Out</option>
+                        </select>
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Easing Function</p>
+                    </div>
+                    <div>
+                        <input value={input3} type="number" step="0.1" placeholder="Pow Exponent (e.g. 2)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Only used if Pow selected</p>
+                    </div>
+                  </div>
+
+                ) : activeTab === "dot-product" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <input value={input} type="number" step="any" placeholder="Surface Angle (Deg, e.g. 90)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction surface is facing</p>
+                    </div>
+                    <div>
+                        <input value={input2} type="number" step="any" placeholder="Light Angle (Deg, e.g. 45)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction of incoming light</p>
+                    </div>
+                  </div>
+
+                // ✈️ TRAVEL VE DİĞERLERİ AYNEN KORUNDU
                 ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
@@ -512,7 +624,6 @@ export default function Home() {
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, hotel: e.target.value})}>
                       <option value="1">🏨 3★ Economy</option><option value="1.8">🏨 4★ Business</option><option value="3.5">🏨 5★ Executive</option>
                     </select>
-                    {/* YENİ: DEFAULTVALUE KULLANILDI, REACT SELECTED HATASI GİDERİLDİ */}
                     <select defaultValue="70" className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setTravelForm({...travelForm, food: e.target.value})}>
                       <option value="30">🍔 Fast Food</option><option value="70">🍽️ Standard</option><option value="150">🍷 Fine Dining</option>
                     </select>
@@ -536,23 +647,6 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input value={input} type="number" min="1" step="1" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                     <input value={input2} type="number" min="0" step="1" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                  </div>
-                ) : activeTab === "lerp-calc" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" step="0.1" placeholder="Start Val (A) e.g. 0" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" step="0.1" placeholder="End Val (B) e.g. 100" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" step="0.01" placeholder="Time/Alpha (t) e.g. 0.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
-                  </div>
-                ) : activeTab === "fov-calc" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="1" max="179" step="1" placeholder="Horiz. FOV (Deg) e.g. 90" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" step="any" placeholder="Aspect Width (e.g. 16)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="1" step="any" placeholder="Aspect Height (e.g. 9)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
-                  </div>
-                ) : activeTab === "delta-time" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input value={input} type="number" min="0" step="any" placeholder="Speed (Units/sec) e.g. 5.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" step="1" placeholder="Engine FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
                 ) : activeTab === "pitch-shift" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
