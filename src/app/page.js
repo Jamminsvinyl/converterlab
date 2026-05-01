@@ -16,7 +16,9 @@ export default function Home() {
   });
 
   const initLandedForm = {
-    route: "TR_EU", tradeType: "standard", freightMethod: "air", val: "", curr: "USD", l: "", w: "", h: "", weight: "", frRate: "", duty: "20", vat: "20", ins: "", extra: ""
+    route: "GLOBAL", tradeType: "standard", freightMethod: "air", incoterm: "FOB", 
+    val: "", curr: "USD", cartons: "1", l: "", w: "", h: "", weight: "", 
+    frRate: "", originFee: "", duty: "20", sct: "0", vat: "20", ins: "", extra: ""
   };
   const [landedForm, setLandedForm] = useState(initLandedForm);
 
@@ -48,97 +50,164 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
-      
-      case 'landed-cost':
+      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU (NİHAİ 2026 VERSİYONU)
+      case 'landed-cost': {
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
-        const kg = parseFloat(landedForm.weight);
-        let dutyRate = parseFloat(landedForm.duty) || 0;
-        let vatRate = parseFloat(landedForm.vat) || 0;
+        const weightPerCtn = parseFloat(landedForm.weight);
+        const cartons = parseInt(landedForm.cartons) || 1;
+        
+        const dutyRate = parseFloat(landedForm.duty) || 0;
+        const sctRate = parseFloat(landedForm.sct) || 0;
+        const vatRate = parseFloat(landedForm.vat) || 0;
 
-        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(kg)) {
-          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Actual Weight are mandatory fields.");
+        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(weightPerCtn)) {
+          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Weight per Carton are mandatory fields.");
           return;
+        }
+
+        const totalKg = weightPerCtn * cartons;
+        const totalCBM = (l * w * h * cartons) / 1000000;
+        
+        let chargeableWt = 0;
+        let chargeableUnit = "";
+        let volKg = 0;
+        let transitDays = "";
+        let dispatchNote = "";
+        let defaultFrRate = 0;
+
+        if (landedForm.freightMethod === "air") {
+            volKg = (l * w * h * cartons) / 5000;
+            chargeableWt = Math.max(totalKg, volKg);
+            chargeableUnit = "kg";
+            transitDays = "1 - 5 Days"; dispatchNote = "AWB cutoff is usually 24-48h prior to flight.";
+            if (landedForm.route === "TR_EU") defaultFrRate = 4.5;
+            else if (landedForm.route === "TR_US") defaultFrRate = 6.5;
+            else if (landedForm.route === "CN_TR") defaultFrRate = 8.0;
+            else defaultFrRate = 5.0;
+        } else if (landedForm.freightMethod === "road") {
+            volKg = (l * w * h * cartons) / 3000;
+            chargeableWt = Math.max(totalKg, volKg);
+            chargeableUnit = "kg";
+            transitDays = "7 - 14 Days"; dispatchNote = "CMR requires booking 2-3 days in advance.";
+            if (landedForm.route === "TR_EU") defaultFrRate = 1.5;
+            else if (landedForm.route === "CN_TR") defaultFrRate = 3.5;
+            else defaultFrRate = 2.0;
+        } else if (landedForm.freightMethod === "sea") {
+            chargeableWt = Math.max(totalCBM, totalKg / 1000);
+            chargeableUnit = "CBM/Ton";
+            transitDays = "20 - 45 Days"; dispatchNote = "B/L closing is usually 3-5 days before vessel.";
+            if (landedForm.route === "TR_EU") defaultFrRate = 50;
+            else if (landedForm.route === "TR_US") defaultFrRate = 120;
+            else if (landedForm.route === "CN_TR") defaultFrRate = 80;
+            else defaultFrRate = 100;
         }
 
         let autoNotes = [];
         let frRate = parseFloat(landedForm.frRate);
-        let transitDays = "";
-        let dispatchNote = "";
-
-        if (landedForm.freightMethod === "air") {
-            transitDays = "1 - 5 Days"; dispatchNote = "Airway Bill (AWB) cutoff is usually 24-48h prior to flight departure.";
-            if (isNaN(frRate) || frRate <= 0) {
-                if (landedForm.route === "TR_EU") frRate = 4.5;
-                else if (landedForm.route === "TR_US") frRate = 6.5;
-                else if (landedForm.route === "CN_TR") frRate = 8.0;
-                else frRate = 5.0;
-            }
-        } else if (landedForm.freightMethod === "sea") {
-            transitDays = "20 - 45 Days"; dispatchNote = "Bill of Lading (B/L) closing is usually 3-5 days before vessel departure.";
-            if (isNaN(frRate) || frRate <= 0) {
-                if (landedForm.route === "TR_EU") frRate = 0.5;
-                else if (landedForm.route === "TR_US") frRate = 1.2;
-                else if (landedForm.route === "CN_TR") frRate = 0.8;
-                else frRate = 1.0;
-            }
-        } else if (landedForm.freightMethod === "road") {
-            transitDays = "7 - 14 Days"; dispatchNote = "CMR/Truck dispatch requires booking and loading 2-3 days in advance.";
-            if (isNaN(frRate) || frRate <= 0) {
-                if (landedForm.route === "TR_EU") frRate = 1.5;
-                else if (landedForm.route === "TR_US") { frRate = 6.5; transitDays = "N/A (Use Air/Sea)"; }
-                else if (landedForm.route === "CN_TR") { frRate = 3.5; transitDays = "18 - 25 Days"; }
-                else frRate = 2.0;
-            }
+        if (isNaN(frRate) || frRate <= 0) {
+            frRate = defaultFrRate;
+            autoNotes.push(`• Freight Rate: Left blank. Auto-applied standard ${landedForm.freightMethod.toUpperCase()} rate of ${frRate} ${landedForm.curr} per ${chargeableUnit}.`);
         }
 
-        if (isNaN(parseFloat(landedForm.frRate)) || parseFloat(landedForm.frRate) <= 0) {
-             autoNotes.push(`• Freight Rate: Estimated at ${frRate} ${landedForm.curr}/kg based on ${landedForm.freightMethod.toUpperCase()} freight for the selected route.`);
+        let originFee = parseFloat(landedForm.originFee);
+        if (landedForm.incoterm === "EXW" && (isNaN(originFee) || originFee < 0)) {
+            originFee = 100;
+            autoNotes.push(`• Origin Charges: Left blank for EXW. Auto-applied standard 100 ${landedForm.curr} for local transport/customs at origin.`);
+        } else if (isNaN(originFee) || originFee < 0) {
+            originFee = 0;
         }
 
         let insRate = parseFloat(landedForm.ins);
-        if (isNaN(insRate)) { insRate = 1.0; autoNotes.push(`• Insurance: Defaulted to industry standard 1.0% of Goods Value.`); }
+        if (isNaN(insRate)) { 
+            insRate = 1.0; 
+            autoNotes.push(`• Insurance: Left blank. Auto-applied ICC(A) standard 1.0% of Goods Value.`); 
+        }
         
         let extra = parseFloat(landedForm.extra);
         if (isNaN(extra)) {
-            if (landedForm.tradeType === "b2c") extra = 5.0;
+            if (landedForm.tradeType === "b2c") extra = 25.0;
             else if (landedForm.tradeType === "ata_carnet") extra = 250.0;
             else extra = 150.0;
-            autoNotes.push(`• Extra Fees: Estimated at ${extra} ${landedForm.curr} for standard ${landedForm.tradeType.toUpperCase()} customs clearance & storage.`);
+            autoNotes.push(`• Local/Broker Fees: Left blank. Auto-applied ${extra} ${landedForm.curr} for standard destination clearance & storage.`);
         }
 
-        let tradeMsg = `🏦 CUSTOMS BASIS (CIF VALUE)\n`;
-        if (landedForm.tradeType === "ata_carnet") {
-            dutyRate = 0; vatRate = 0;
-            tradeMsg = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT) APPLIED\n* Duty & VAT are exempted for temporary exhibition goods returning in original state.\n\n🏦 CUSTOMS BASIS (CIF VALUE)\n`;
+        let freightCost = chargeableWt * frRate;
+        let insAmt = val * (insRate / 100);
+        let cif = 0;
+        let incotermNote = "";
+
+        if (landedForm.incoterm === "CIF") {
+            freightCost = 0; insAmt = 0; originFee = 0;
+            cif = val;
+            incotermNote = "* CIF selected: Freight and Insurance are assumed to be included in the Goods Value.\n";
+        } else if (landedForm.incoterm === "FOB") {
+            originFee = 0;
+            cif = val + freightCost + insAmt;
+            incotermNote = "* FOB selected: Origin charges are paid by shipper. Freight & Insurance added to CIF.\n";
+        } else if (landedForm.incoterm === "EXW") {
+            cif = val + originFee + freightCost + insAmt;
+            incotermNote = "* EXW selected: Buyer pays all. Origin charges, Freight, and Insurance added to CIF.\n";
         }
 
-        const insAmt = val * (insRate / 100);
-        const volKg = (l * w * h) / 5000;
-        const chargeableKg = Math.max(kg, volKg);
-        const freightCost = chargeableKg * frRate;
-        const cif = val + freightCost + insAmt;
         const dutyAmt = cif * (dutyRate / 100);
-        const vatBase = cif + dutyAmt; 
+        const sctAmt = (cif + dutyAmt) * (sctRate / 100);
+        const vatBase = cif + dutyAmt + sctAmt + extra; 
         const vatAmt = vatBase * (vatRate / 100);
-        const totalLanded = cif + dutyAmt + vatAmt + extra;
+        
+        const totalLanded = cif + dutyAmt + sctAmt + vatAmt + extra;
         const curr = landedForm.curr;
         const fmt = (amt) => new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(amt);
 
-        let warnMsg = "";
-        if (dutyRate >= 30 && val > 30 && landedForm.tradeType === "b2c" && (curr === "EUR" || curr === "USD")) {
-          warnMsg = "\n⚠️ WARNING: B2C personal imports above 30 EUR/USD limit may be subject to commercial customs procedures in TR.";
+        let b2cWarning = "";
+        if (landedForm.tradeType === "b2c") {
+            b2cWarning = `🚨 2026 B2C REGULATION WARNING 🚨\nPersonal import tax exemptions (De Minimis / 30 EUR limit) have been completely ABOLISHED. All B2C e-commerce imports are now subject to commercial tax brackets (e.g., 30% EU, 60% non-EU) plus applicable presentation & brokerage fees, regardless of the invoice value.\n==========================================\n`;
+        }
+
+        let ataWarning = "";
+        if (landedForm.tradeType === "ata_carnet") {
+            ataWarning = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT)\nDuty, SCT, and VAT are exempted for temporary goods returning in their original state.\n==========================================\n`;
         }
 
         let autoFillText = "";
         if (autoNotes.length > 0) {
-            autoFillText = `\n\n💡 AUTO-ESTIMATES APPLIED\n------------------------------------------\nSince some fields were left blank, the system applied standard industry estimates:\n${autoNotes.join('\n')}\n* For exact results, input real quotes from your forwarder.`;
+            autoFillText = `\n\n🤖 VIRTUAL BROKER NOTES (AUTO-FILLS)\n------------------------------------------\nTo prevent calculation failures, the system filled your blank fields with industry standards:\n${autoNotes.join('\n')}\n* For 100% exact quotes, please input the real rates provided by your forwarder.`;
         }
 
-        setOutput(`🚢 GLOBAL LANDED COST REPORT\n==========================================\n⏱️ TRANSIT & LOGISTICS\nMethod        : ${landedForm.freightMethod.toUpperCase()} FREIGHT\nEst. Transit  : ${transitDays}\nDispatch Rule : ${dispatchNote}\n\n📦 FREIGHT CALCULATION (Route: ${landedForm.route.replace('_', ' ➡️ ')})\nDimensions    : ${l}x${w}x${h} cm\nActual Weight : ${kg.toFixed(2)} kg\nVolumetric Wt : ${volKg.toFixed(2)} kg (IATA Divisor: 5000)\nChargeable Wt : ${chargeableKg.toFixed(2)} kg\nFreight Cost  : ${fmt(freightCost)} (${fmt(frRate)}/kg)\n\n${tradeMsg}Goods Value   : ${fmt(val)}\nInsurance     : ${fmt(insAmt)} (${insRate}% of Goods)\nCIF Matrah    : ${fmt(cif)}\n\n⚖️ TAXES & DUTIES\nCustoms Duty  : ${fmt(dutyAmt)} (${dutyRate}% of CIF)\nVAT Base      : ${fmt(vatBase)} (CIF + Duty)\nVAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\nBroker/Extra  : ${fmt(extra)}\n------------------------------------------\n💰 TOTAL LANDED COST: ${fmt(totalLanded)}\n${warnMsg}${autoFillText}`);
-        break;
+        let volumeText = landedForm.freightMethod === "sea" 
+            ? `Total Volume  : ${totalCBM.toFixed(3)} CBM\nChargeable Wt : ${chargeableWt.toFixed(3)} CBM/Ton (W/M Rule)\n`
+            : `Total Volume  : ${totalCBM.toFixed(3)} CBM\nVolumetric Wt : ${volKg.toFixed(2)} kg (Divisor: ${landedForm.freightMethod === "air" ? 5000 : 3000})\nChargeable Wt : ${chargeableWt.toFixed(2)} kg\n`;
 
-      case 'travel-calc':
+        setOutput(
+          `🚢 GLOBAL LANDED COST REPORT\n` +
+          `==========================================\n` +
+          b2cWarning + ataWarning +
+          `📦 LOGISTICS & FREIGHT (Method: ${landedForm.freightMethod.toUpperCase()})\n` +
+          `Route         : ${landedForm.route.replace('_', ' ➡️ ')}\n` +
+          `Est. Transit  : ${transitDays}\n` +
+          `Cartons       : ${cartons} (Dims: ${l}x${w}x${h} cm)\n` +
+          `Total Weight  : ${totalKg.toFixed(2)} kg\n` + volumeText +
+          `Freight Cost  : ${landedForm.incoterm === "CIF" ? "Included in Invoice" : fmt(freightCost) + " (" + fmt(frRate) + "/" + chargeableUnit + ")"}\n` +
+          (landedForm.incoterm === "EXW" ? `Origin Fees   : ${fmt(originFee)}\n` : "") + `\n` +
+          `🏦 CUSTOMS BASIS (CIF VALUE)\n` + incotermNote +
+          `Goods Value   : ${fmt(val)}\n` +
+          `Insurance     : ${landedForm.incoterm === "CIF" ? "Included" : fmt(insAmt) + " (" + insRate + "%)"}\n` +
+          `CIF Matrah    : ${fmt(cif)}\n\n` +
+          `⚖️ TAXES & DUTIES (Trade: ${landedForm.tradeType.toUpperCase()})\n` +
+          (landedForm.tradeType === "ata_carnet" ? `Taxes Exempted for ATA Carnet.\nLocal/Broker  : ${fmt(extra)}\n` : 
+          `Customs Duty  : ${fmt(dutyAmt)} (${dutyRate}% of CIF)\n` +
+          `SCT (ÖTV)     : ${fmt(sctAmt)} (${sctRate}% of CIF+Duty)\n` +
+          `Local/Broker  : ${fmt(extra)}\n` +
+          `VAT Base      : ${fmt(vatBase)} (CIF+Duty+SCT+Local)\n` +
+          `VAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\n`) +
+          `------------------------------------------\n` +
+          `💰 TOTAL LANDED COST: ${fmt(totalLanded)}` + autoFillText
+        );
+        break;
+      }
+
+      // ✈️ TRAVEL CALC
+      case 'travel-calc': {
         const tDays = parseInt(travelForm.days);
         if(!tDays || tDays <= 0 || tDays > 365) { setOutput("⚠️ ERROR: Duration must be between 1 and 365 days."); return; }
         const tIndex = parseFloat(travelForm.destVal);
@@ -157,8 +226,10 @@ export default function Home() {
 
         setOutput(`✈️ TRAVEL EXPENSE REPORT\n==========================================\nLocation      : ${travelForm.destName}\nDuration      : ${tDays} Days\nAccommodation : ${hotelLabel}\nDaily Food    : ${foodLabel}\nLogistics     : ${transLabel}\n------------------------------------------\n💰 ESTIMATED BUDGET: ${formatCurrT(bufferTotalUSD * rate, travelForm.currency)}\n------------------------------------------\nAvg Daily Cost: ${formatCurrT((dailyUSD * 1.10) * rate, travelForm.currency)}\nLive Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n*Includes 10% corporate safety margin.`);
         break;
+      }
 
-      case 'json-csv':
+      // --- DEV TOOLS (Metin Motorları) ---
+      case 'json-csv': {
         if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
         try {
             let data = JSON.parse(input);
@@ -176,8 +247,9 @@ export default function Home() {
             setOutput(csvStr);
         } catch(err) { setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message); }
         break;
+      }
 
-      case 'jwt-decoder':
+      case 'jwt-decoder': {
         if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a JWT."); return; }
         try {
             const parts = input.split('.');
@@ -187,8 +259,9 @@ export default function Home() {
             setOutput(`--- HEADER ---\n${JSON.stringify(header, null, 2)}\n\n--- PAYLOAD ---\n${JSON.stringify(payload, null, 2)}\n\n--- SIGNATURE ---\n[Hidden/Binary]`);
         } catch(err) { setOutput("⚠️ ERROR: Invalid JWT.\n" + err.message); }
         break;
+      }
 
-      case 'sql-format':
+      case 'sql-format': {
         if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a SQL query."); return; }
         let formatted = input.replace(/\s+/g, ' ')
           .replace(/\s*(SELECT|FROM|WHERE|INNER JOIN|LEFT JOIN|RIGHT JOIN|GROUP BY|ORDER BY|LIMIT|INSERT INTO|VALUES|UPDATE|SET|DELETE FROM)\s*/gi, '\n\n$1\n  ')
@@ -197,8 +270,9 @@ export default function Home() {
           .replace(/ OR /gi, '\n  OR ');
         setOutput(formatted.trim());
         break;
+      }
 
-      case 'curl-code':
+      case 'curl-code': {
         if (!input.trim().startsWith('curl')) { setOutput("⚠️ ERROR: Input must start with 'curl'."); return; }
         const urlMatch = input.match(/'(https?:\/\/[^']+)'/);
         const methodMatch = input.match(/-X\s+([A-Z]+)/);
@@ -220,8 +294,9 @@ export default function Home() {
         
         setOutput(`// Javascript Fetch Equivalent\n\n${fetchCode}`);
         break;
+      }
 
-      case 'diff-checker':
+      case 'diff-checker': {
         if (!input && !input2) { setOutput("⚠️ ERROR: Please paste Original and New text."); return; }
         const oldL = input.split('\n');
         const newL = input2.split('\n');
@@ -239,8 +314,10 @@ export default function Home() {
         if(changes === 0) setOutput("✅ Texts are 100% identical.");
         else setOutput(`⚠️ FOUND ${changes} LINE DIFFERENCE(S)\n==========================================\n\n${diffOut}`);
         break;
+      }
 
-      case 'pixel-perfect':
+      // --- GAME DEV MOTORLARI ---
+      case 'pixel-perfect': {
         const bW = parseFloat(input); const bH = parseFloat(input2); const targetRatioStr = input3.trim() || "16:9";
         if (isNaN(bW) || isNaN(bH) || bW <= 0 || bH <= 0) { setOutput("⚠️ ERROR: Please enter a valid Base Width and Height (e.g., 1920 and 1080)."); return; }
         const ratioParts = targetRatioStr.split(':');
@@ -259,8 +336,9 @@ export default function Home() {
         }
         setOutput(`🎮 PIXEL PERFECT UI SCALER\n==========================================\nBase Resolution : ${bW}x${bH} (Ratio: ${baseRatio.toFixed(3)})\nTarget Screen   : ${targetRatioStr} (Ratio: ${targetRatio.toFixed(3)})\n\n--- SCALE RESULT ---\n${scaleResult}\n\n💡 Dev Advice:\n${advice}`);
         break;
+      }
 
-      case 'shader-easing':
+      case 'shader-easing': {
         const xVal = parseFloat(input); const easeType = input2 || "smoothstep"; const exponent = parseFloat(input3) || 2;
         if (isNaN(xVal) || xVal < 0 || xVal > 1) { setOutput("⚠️ ERROR: Input X must be between 0.0 and 1.0."); return; }
         
@@ -274,8 +352,9 @@ export default function Home() {
         const bar = "█".repeat(filled) + "░".repeat(barLength - filled);
         setOutput(`🔮 SHADER EASING VISUALIZER\n==========================================\nFunction : ${easeType.toUpperCase()}\nInput X  : ${xVal.toFixed(3)}\n\n--- MATH RESULT ---\nOutput Y : ${yVal.toFixed(4)}\n\nCurve Vis: [${bar}]`);
         break;
+      }
 
-      case 'dot-product':
+      case 'dot-product': {
         const surfAngle = parseFloat(input); const lightAngle = parseFloat(input2);
         if (isNaN(surfAngle) || isNaN(lightAngle)) { setOutput("⚠️ ERROR: Please enter valid angles in degrees (e.g., 0 and 45)."); return; }
         
@@ -291,8 +370,10 @@ export default function Home() {
 
         setOutput(`🔦 VECTOR DOT PRODUCT (LIGHTING)\n==========================================\nSurface Normal Angle : ${surfAngle}°\nLight Source Angle   : ${lightAngle}°\n\n--- CALCULATION ---\nDot Product (Cos θ)  : ${dotProd.toFixed(4)}\nClamped Brightness   : ${brightness.toFixed(4)}\n\n💡 Shader State:\n${lightDesc}\n\n*Note: In shaders, dot(N, L) < 0 means the light hits the back of the object.`);
         break;
+      }
 
-      case 'freq-note':
+      // --- MÜZİK MOTORLARI ---
+      case 'freq-note': {
         const hz = parseFloat(input);
         if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
         const midi = 12 * (Math.log2(hz / 440)) + 69;
@@ -301,15 +382,17 @@ export default function Home() {
         const cents = Math.round(1200 * Math.log2(hz / exactFreq));
         setOutput(`Detected Note: ${keysSharp[roundedMidi % 12]}${Math.floor(roundedMidi / 12) - 1}\nMIDI Note Number: ${roundedMidi}\nPerfect Pitch Freq: ${exactFreq.toFixed(2)} Hz\nDetune: ${cents > 0 ? '+' : ''}${cents} Cents`);
         break;
+      }
 
-      case 'bpm-ms':
+      case 'bpm-ms': {
         const bpmVal = parseFloat(input);
         if(isNaN(bpmVal) || bpmVal <= 0 || bpmVal > 999) { setOutput("⚠️ ERROR: BPM must be a positive number between 1 and 999."); return; }
         const bpmMs = (60000 / bpmVal).toFixed(2);
         setOutput(`1/4 Note (Quarter): ${bpmMs} ms\n1/8 Note (Eighth): ${(bpmMs/2).toFixed(2)} ms\n1/16 Note (Sixteenth): ${(bpmMs/4).toFixed(2)} ms`);
         break;
+      }
 
-      case 'acoustic-calc':
+      case 'acoustic-calc': {
         const acW = parseFloat(input), acL = parseFloat(input2);
         let acH = parseFloat(input3);
         let autoHNote = "";
@@ -324,8 +407,9 @@ export default function Home() {
         const area = 2 * (acW * acL + acL * acH + acW * acH);
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²${autoHNote}`);
         break;
+      }
 
-      case 'circle-fifths':
+      case 'circle-fifths': {
         const cleanNote = input.trim().charAt(0).toUpperCase() + input.trim().slice(1).toLowerCase();
         const noteMap = { "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4, "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9, "A#":10, "Bb":10, "B":11 };
         const rootIdx = noteMap[cleanNote];
@@ -335,16 +419,18 @@ export default function Home() {
         const relMinor = keysSharp[(rootIdx + 9) % 12];
         setOutput(`ROOT KEY: ${keysSharp[rootIdx]} Major / ${cleanNote !== keysSharp[rootIdx] ? '('+cleanNote+' Major)' : ''}\n==========================================\nPerfect 4th (Subdominant) : ${subdominant} Major\nPerfect 5th (Dominant)    : ${dominant} Major\nRelative Minor Scale      : ${relMinor} Minor (${relMinor}m)\n\n*Use these chords for foundational harmonic progressions.`);
         break;
+      }
 
-      case 'pitch-shift':
+      case 'pitch-shift': {
         const origBpm = parseFloat(input); const semitones = parseFloat(input2);
         if(isNaN(origBpm) || origBpm <= 0) { setOutput("⚠️ ERROR: Original BPM must be a positive number."); return; }
         if(isNaN(semitones)) { setOutput("⚠️ ERROR: Semitone shift must be a valid number (e.g., 3 or -2)."); return; }
         const newBpm = origBpm * Math.pow(2, semitones / 12);
         setOutput(`Original BPM: ${origBpm}\nPitch Shift: ${semitones > 0 ? '+' : ''}${semitones} Semitones\n\n--- REPITCH RESULT ---\nNew Target BPM: ${newBpm.toFixed(2)}\n\n*Pitching a sample UP speeds it up. Pitching it DOWN slows it down.`);
         break;
+      }
 
-      case 'note-freq':
+      case 'note-freq': {
         const noteRegex = /^([a-gA-G])([#b]?)(-?\d+)$/;
         const match = input.trim().match(noteRegex);
         if(!match) { setOutput("⚠️ ERROR: Invalid format. Please enter a Note and Octave (e.g., C4, F#3, Bb2)."); return; }
@@ -357,6 +443,7 @@ export default function Home() {
         const finalFreq = 440 * Math.pow(2, (finalMidi - 69) / 12);
         setOutput(`Input Note: ${nLetter}${nAccidental}${nOctave}\nMIDI Note Number: ${finalMidi}\n\n--- FREQUENCY RESULT ---\nExact Frequency: ${finalFreq.toFixed(2)} Hz\n\n*A4 is standard tuning reference at 440 Hz.`);
         break;
+      }
 
       default: 
         setOutput("Ready to process..."); 
@@ -365,19 +452,26 @@ export default function Home() {
   };
 
   const toolData = {
+    // 💼 BİZNES & DATA
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Trade Type. Enter Value & Wt. Blank fields auto-estimate.", why: "AI-assisted broker simulator for transit times, CIF duties, and ATA Carnets." },
+    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Incoterm. Enter Val/Dims. Blank fields will auto-estimate.", why: "AI-assisted broker simulator for EXW/FOB/CIF, W/M CBM Sea rules, and 2026 B2C taxes." },
+    
+    // 💻 GELİŞTİRİCİ
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Rapid data integration and database parsing." },
     "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and JS code conversion." },
     "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused token decoding. No server calls are made." },
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
     "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
+    
+    // 🎶 MÜZİK LAB
     "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Calculates perfect 4th, 5th, and relative minor keys for harmony." },
     "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched." },
     "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Identifies the Hertz (Hz) value of a specific MIDI note for LFO design." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
     "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for kick drum tuning." },
     "acoustic-calc": { name: "Room Treatment", how: "Enter W/L. Leave Height blank for 2.8m standard.", why: "Calculates surface area and minimum acoustic panel requirements." },
+    
+    // 🎮 GAME DEV (PREMIUM)
     "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide screens." },
     "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
     "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
@@ -443,40 +537,50 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
+                {/* 🚢 GLOBAL LANDED COST UI - MASTER SEVİYE */}
                 {activeTab === "landed-cost" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="md:col-span-1 lg:col-span-2">
-                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
-                        <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
-                        <option value="TR_US">🇹🇷 TR ➡️ 🇺🇸 US (Export)</option>
-                        <option value="CN_TR">🇨🇳 CN ➡️ 🇹🇷 TR (Import)</option>
-                        <option value="GLOBAL">🌍 Global ➡️ Global (Standard)</option>
-                      </select>
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Select route for auto-freight estimation.</p>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
+                    {/* SATIR 1: ROTA VE METODLAR */}
+                    <div className="md:col-span-1">
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
+                        <option value="GLOBAL">🌍 Global (Standard)</option>
+                        <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / UK</option>
+                        <option value="TR_US">🇹🇷 TR ➡️ 🇺🇸 US</option>
+                        <option value="CN_TR">🇨🇳 CN ➡️ 🇹🇷 TR</option>
+                      </select>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Route for auto-estimates</p>
+                    </div>
                     <div className="md:col-span-1">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, tradeType: e.target.value})}>
                         <option value="standard">📦 Standard Trade</option>
                         <option value="ata_carnet">🎟️ ATA Carnet</option>
-                        <option value="b2c">🛒 B2C Personal</option>
+                        <option value="b2c">🛒 B2C (E-Commerce)</option>
                       </select>
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs logic.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs logic / B2C tax</p>
                     </div>
-
                     <div className="md:col-span-1">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, freightMethod: e.target.value})}>
-                        <option value="air">✈️ Air Freight</option>
-                        <option value="sea">🚢 Sea Freight</option>
+                        <option value="air">✈️ Air Freight (IATA)</option>
+                        <option value="sea">🚢 Sea Freight (W/M)</option>
                         <option value="road">🚛 Road Freight</option>
                       </select>
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Transport method.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Transport & Divisor</p>
+                    </div>
+                    <div className="md:col-span-1">
+                      <select value={landedForm.incoterm} className="w-full bg-emerald-900/20 border border-emerald-500/50 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, incoterm: e.target.value})}>
+                        <option value="FOB">FOB (Free on Board)</option>
+                        <option value="EXW">EXW (Ex Works)</option>
+                        <option value="CIF">CIF (Cost, Ins, Freight)</option>
+                      </select>
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Incoterm (CIF Basis)</p>
                     </div>
 
-                    <div className="md:col-span-1 lg:col-span-2 flex gap-2">
+                    {/* SATIR 2: FİYAT VE KİLO */}
+                    <div className="md:col-span-2 flex gap-2">
                       <div className="flex-1">
-                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">FOB Invoice value (Req).</p>
+                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Invoice Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Total item value (Req)</p>
                       </div>
                       <div>
                         <select className="h-[54px] bg-black border border-neutral-800 rounded-xl p-2 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, curr: e.target.value})}>
@@ -484,48 +588,65 @@ export default function Home() {
                         </select>
                       </div>
                     </div>
-
                     <div>
-                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Weight *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Gross weight in kg (Req).</p>
+                      <input value={landedForm.cartons} type="number" min="1" step="1" placeholder="Total Cartons" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, cartons: e.target.value})} />
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Qty multiplier (Def: 1)</p>
+                    </div>
+                    <div>
+                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Wt/Ctn (kg) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Weight per carton (Req)</p>
                     </div>
 
+                    {/* SATIR 3: EBATLAR VE NAKLİYE GİRDİLERİ */}
+                    <div className="md:col-span-1 lg:col-span-2 grid grid-cols-3 gap-2">
+                        <div>
+                          <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Length</p>
+                        </div>
+                        <div>
+                          <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Width</p>
+                        </div>
+                        <div>
+                          <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Height</p>
+                        </div>
+                    </div>
                     <div>
                       <input value={landedForm.frRate} type="number" min="0" step="any" placeholder="Freight Rate" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, frRate: e.target.value})} />
-                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Rate/kg. Leave blank for auto.</p>
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Rate/kg or CBM. Blank = Auto.</p>
+                    </div>
+                    <div>
+                      <input value={landedForm.originFee} type="number" min="0" step="any" placeholder="Origin Fees" disabled={landedForm.incoterm !== "EXW"} className={`w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 ${landedForm.incoterm !== "EXW" ? 'opacity-30' : ''}`} onChange={(e) => setLandedForm({...landedForm, originFee: e.target.value})} />
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Only for EXW. Blank = Auto.</p>
                     </div>
 
-                    <div className="md:col-span-1 lg:col-span-1 grid grid-cols-3 gap-2">
-                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
-                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
-                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
-                    </div>
-
+                    {/* SATIR 4: VERGİLER */}
                     <div>
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, duty: e.target.value})}>
-                        <option value="20">Duty: Gen. Import 20%</option>
+                        <option value="20">Duty: Standard 20%</option>
                         <option value="0">Duty: EU Origin 0%</option>
                         <option value="30">Duty: B2C EU 30%</option>
-                        <option value="60">Duty: B2C Other 60%</option>
+                        <option value="60">Duty: B2C Non-EU 60%</option>
                       </select>
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs tax %.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Customs Tax %</p>
                     </div>
-                    
+                    <div>
+                      <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, sct: e.target.value})}>
+                        <option value="0">SCT (ÖTV): 0%</option>
+                        <option value="20">SCT (ÖTV): 20%</option>
+                      </select>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Special Consumption Tax</p>
+                    </div>
                     <div>
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, vat: e.target.value})}>
                         <option value="20">VAT 20%</option><option value="10">VAT 10%</option><option value="1">VAT 1%</option><option value="0">VAT 0%</option>
                       </select>
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Value added tax %.</p>
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Value Added Tax %</p>
                     </div>
-
                     <div>
-                      <input value={landedForm.ins} type="number" min="0" step="any" placeholder="Insurance %" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, ins: e.target.value})} />
-                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Leave blank to use standard 1%.</p>
-                    </div>
-
-                    <div className="md:col-span-1 lg:col-span-2">
-                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Extra Fees" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
-                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Broker/Storage amt. Blank = Auto.</p>
+                      <input value={landedForm.extra} type="number" min="0" step="any" placeholder="Local Extra Fees" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, extra: e.target.value})} />
+                      <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Broker/Storage. Blank = Auto.</p>
                     </div>
                   </div>
 
@@ -633,6 +754,7 @@ export default function Home() {
                 <pre className="p-4 md:p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-xs md:text-sm whitespace-pre-wrap overflow-x-auto leading-relaxed">{output || "Awaiting execution..."}</pre>
               </div>
 
+            // 💻 GELİŞTİRİCİ ARAÇLARI (TEXTAREA)
             ) : (
               <div className="space-y-6">
                 {activeTab === "diff-checker" ? (
