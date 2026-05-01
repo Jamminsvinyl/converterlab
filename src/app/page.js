@@ -489,6 +489,7 @@ export default function Home() {
                 </div>
             )}
 
+            {/* MÜZİK MOTORLARININ EKSİK UI ZİNCİRİ BURADA TAMAMLANDI */}
             {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "tuning-harmonics", "delay-lfo", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6 relative z-10">
                 
@@ -706,8 +707,17 @@ export default function Home() {
                     </div>
                   </div>
 
-                ) : ["circle-fifths"].includes(activeTab) ? (
-                  <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                ) : activeTab === "delay-lfo" ? (
+                  <div>
+                    <input value={input} type="number" min="1" step="any" placeholder="Enter track tempo (e.g. 120) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base BPM for LFO and Delay calculations</p>
+                  </div>
+
+                ) : activeTab === "circle-fifths" ? (
+                  <div>
+                    <input value={input} type="text" placeholder="Enter Key (e.g. C Major, F# minor) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <p className="text-[10px] text-neutral-500 mt-1 ml-2">Root note and quality</p>
+                  </div>
 
                 ) : (
                   <input value={input} type="number" min="0" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
@@ -729,7 +739,7 @@ export default function Home() {
                   <textarea value={input} className="h-48 w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} placeholder={toolData[activeTab]?.how} />
                 )}
                 
-                <button onClick={() => calculateLogic(activeTab)} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
+                <button onClick={() => calculateLogic(activeTab)} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest relative z-20">PROCESS DATA</button>
                 
                 <textarea value={output} className="h-64 w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" readOnly placeholder="Result will appear here..." />
               </div>
