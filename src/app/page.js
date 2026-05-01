@@ -48,6 +48,7 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
+      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU
       case 'landed':
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
@@ -170,6 +171,7 @@ export default function Home() {
         );
         break;
 
+      // ✈️ SEYAHAT MOTORU
       case 'travel':
         const tDays = parseInt(travelForm.days);
         if(!tDays || tDays <= 0 || tDays > 365) { setOutput("⚠️ ERROR: Duration must be between 1 and 365 days."); return; }
@@ -190,15 +192,7 @@ export default function Home() {
         setOutput(`✈️ TRAVEL EXPENSE REPORT\n==========================================\nLocation      : ${travelForm.destName}\nDuration      : ${tDays} Days\nAccommodation : ${hotelLabel}\nDaily Food    : ${foodLabel}\nLogistics     : ${transLabel}\n------------------------------------------\n💰 ESTIMATED BUDGET: ${formatCurr(bufferTotalUSD * rate, travelForm.currency)}\n------------------------------------------\nAvg Daily Cost: ${formatCurr((dailyUSD * 1.10) * rate, travelForm.currency)}\nLive Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n*Includes 10% corporate safety margin.`);
         break;
 
-      case 'stats':
-        const nums = input.split(/[, \s\n]+/).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
-        if(nums.length === 0) { setOutput("⚠️ ERROR: Please enter valid numeric data (e.g. 10.5, 20, 30)."); return; }
-        const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-        const median = nums.length % 2 === 0 ? (nums[nums.length/2 - 1] + nums[nums.length/2]) / 2 : nums[Math.floor(nums.length/2)];
-        const stdDev = Math.sqrt(nums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / nums.length);
-        setOutput(`Data Points: ${nums.length}\nMean (Avg): ${mean.toFixed(2)}\nMedian: ${median}\nMin/Max: ${nums[0]} / ${nums[nums.length-1]}\nStandard Deviation: ${stdDev.toFixed(2)}`);
-        break;
-
+      // 🎮 GAME DEV MOTORLARI
       case 'pixel':
         const bW = parseFloat(input);
         const bH = parseFloat(input2);
@@ -280,6 +274,7 @@ export default function Home() {
         setOutput(`🔦 VECTOR DOT PRODUCT (LIGHTING)\n==========================================\nSurface Normal Angle : ${surfAngle}°\nLight Source Angle   : ${lightAngle}°\n\n--- CALCULATION ---\nDot Product (Cos θ)  : ${dotProd.toFixed(4)}\nClamped Brightness   : ${brightness.toFixed(4)}\n\n💡 Shader State:\n${lightDesc}\n\n*Note: In shaders, dot(N, L) < 0 means the light hits the back of the object.`);
         break;
 
+      // 🎶 MÜZİK MOTORLARI
       case 'freq':
         const hz = parseFloat(input);
         if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
@@ -298,10 +293,22 @@ export default function Home() {
         break;
 
       case 'acoustic':
-        const acW = parseFloat(input), acL = parseFloat(input2), acH = parseFloat(input3);
-        if(isNaN(acW) || isNaN(acL) || isNaN(acH) || acW <= 0 || acL <= 0 || acH <= 0) { setOutput("⚠️ ERROR: Width, Length, and Height must be positive numbers in meters (m)."); return; }
+        const acW = parseFloat(input), acL = parseFloat(input2);
+        let acH = parseFloat(input3);
+        let autoHNote = "";
+
+        if(isNaN(acW) || isNaN(acL) || acW <= 0 || acL <= 0) { 
+            setOutput("⚠️ ERROR: Room Width and Length are mandatory fields (> 0 meters)."); return; 
+        }
+
+        // AKUSTİK MOTORU İÇİN AKILLI TAHMİN (AUTO-ESTIMATE)
+        if(isNaN(acH) || acH <= 0) {
+            acH = 2.8;
+            autoHNote = "\n\n💡 AUTO-ESTIMATE APPLIED:\nCeiling height left blank. System defaulted to standard 2.8 meters.";
+        }
+
         const area = 2 * (acW * acL + acL * acH + acW * acH);
-        setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²`);
+        setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²${autoHNote}`);
         break;
 
       case 'circle':
@@ -340,41 +347,6 @@ export default function Home() {
         setOutput(`Input Note: ${nLetter}${nAccidental}${nOctave}\nMIDI Note Number: ${finalMidi}\n\n--- FREQUENCY RESULT ---\nExact Frequency: ${finalFreq.toFixed(2)} Hz\n\n*A4 is standard tuning reference at 440 Hz.`);
         break;
 
-      case 'deg':
-        const deg = parseFloat(input);
-        if(isNaN(deg)) { setOutput("⚠️ ERROR: Enter a valid numeric angle (e.g. 90, -180.5)."); return; }
-        setOutput(`${deg} Degrees = ${(deg * Math.PI / 180).toFixed(4)} Radians\n\n*Note: Unity/Unreal Math functions usually expect Radians.`);
-        break;
-
-      case 'aspect':
-        const ow = parseFloat(input), oh = parseFloat(input2), nw = parseFloat(input3);
-        if(isNaN(ow) || isNaN(oh) || ow <= 0 || oh <= 0) { setOutput("⚠️ ERROR: Original Width and Height must be positive pixels (px)."); return; }
-        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-        const div = gcd(ow, oh);
-        let out = `Original Resolution: ${ow} x ${oh} px\nAspect Ratio: ${ow/div}:${oh/div}\nRatio Decimal: ${(ow/oh).toFixed(4)}`;
-        if(nw && nw > 0) {
-            const nh = (oh / ow) * nw;
-            out += `\n\n--- UI SCALED RESOLUTION ---\nTarget Width: ${nw} px\nTarget Height: ${Math.round(nh)} px (Exact: ${nh.toFixed(2)})`;
-        }
-        setOutput(out);
-        break;
-
-      case 'hex':
-        let hex = input.replace("#", "").trim();
-        if(hex.length === 3) hex = hex.split('').map(c => c+c).join('');
-        const hexRegex = /^[0-9A-Fa-f]{6}$/;
-        if(!hexRegex.test(hex)) { setOutput("⚠️ ERROR: Enter a valid 6-digit Hex code (e.g., FF5733)."); return; }
-        const r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
-        setOutput(`Standard RGB: rgb(${r}, ${g}, ${b})\n\n--- SHADER CODE (Normalized 0.0 - 1.0) ---\nvec4(${(r/255).toFixed(3)}f, ${(g/255).toFixed(3)}f, ${(b/255).toFixed(3)}f, 1.000f)`);
-        break;
-
-      case 'fps':
-        const fps = parseFloat(input), frames = parseFloat(input2);
-        if(isNaN(fps) || isNaN(frames) || fps <= 0 || frames < 0) { setOutput("⚠️ ERROR: Target FPS must be > 0 and Frames must be >= 0."); return; }
-        const ms = (frames / fps) * 1000;
-        setOutput(`Target Engine Speed: ${fps} FPS\nAnimation Frame Count: ${frames} frames\n\n--- DURATION ---\nMilliseconds: ${ms.toFixed(2)} ms\nSeconds: ${(ms/1000).toFixed(4)} s`);
-        break;
-
       default: 
         setOutput("Ready to process..."); 
         break;
@@ -382,27 +354,27 @@ export default function Home() {
   };
 
   const toolData = {
+    // 💼 BİZNES & DATA
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Select Freight Method & Trade Type. Blank fields will auto-estimate.", why: "AI-assisted broker simulator for transit times, CIF duties, and ATA Carnets." },
-    "stats-calc": { name: "Statistics Engine", how: "Enter numbers separated by spaces/commas (e.g., 10.5, -20, 35).", why: "Calculates Mean, Median, and Std Dev for data analysis." },
-    "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Data integration and parsing." },
-    "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Rapid API endpoint testing and conversion." },
-    "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused local token decoding. No server calls." },
-    "base64": { name: "Base64 Tool", how: "Paste regular text or Base64 string.", why: "Secure data encoding/decoding for web transmission." },
+    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Trade Type. Enter Value & Wt. Blank fields auto-estimate.", why: "AI-assisted broker simulator for transit times, CIF duties, and ATA Carnets." },
+    
+    // 💻 GELİŞTİRİCİ
+    "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Rapid data integration and database parsing." },
+    "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and code conversion." },
+    "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused token decoding. No server calls are made." },
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
     "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
-    "markdown": { name: "Markdown Preview", how: "Write Markdown formatting text.", why: "Real-time documentation rendering." },
-    "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Accurately calculates perfect 4th, 5th, and relative minor keys for harmony planning." },
-    "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched (transposed)." },
-    "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Accurately identifies the Hertz (Hz) value of a specific MIDI note for precise synth and LFO design." },
+    
+    // 🎶 MÜZİK LAB
+    "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Calculates perfect 4th, 5th, and relative minor keys for harmony." },
+    "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched." },
+    "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Identifies the Hertz (Hz) value of a specific MIDI note for LFO design." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
-    "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for acoustic synth/kick drum tuning." },
-    "acoustic-calc": { name: "Room Treatment", how: "Enter Width, Length, and Height (Range: > 0 Meters).", why: "Calculates surface area (m²) and minimum acoustic panel requirements." },
-    "deg-rad": { name: "Degrees to Radians", how: "Enter rotation angle (Range: Any +/- Degrees).", why: "Game engines use Radians for vector math and Quaternions." },
-    "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
-    "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
-    "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
-    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide/iPad." },
+    "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for kick drum tuning." },
+    "acoustic-calc": { name: "Room Treatment", how: "Enter W/L. Leave Height blank for 2.8m standard.", why: "Calculates surface area and minimum acoustic panel requirements." },
+    
+    // 🎮 GAME DEV (PREMIUM)
+    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide screens." },
     "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
     "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
   };
@@ -431,10 +403,11 @@ export default function Home() {
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0 px-4">
         <div className="py-8 px-4 border-b border-neutral-800 mb-4"><h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1></div>
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
-          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
-          <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
+          {/* MENÜ TERTEMİZ: GEREKSİZLER ATILDI */}
+          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost"]} />
+          <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
+          <NavGroup title="Game Dev" items={["pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       </aside>
 
@@ -444,10 +417,10 @@ export default function Home() {
             <h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1>
             <button onClick={() => setIsMenuOpen(false)} className="text-emerald-500 font-bold border border-emerald-500/20 px-4 py-2 rounded-full text-xs">✕ CLOSE</button>
           </div>
-          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
-          <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
+          <NavGroup title="Business & Data" items={["travel-calc", "landed-cost"]} />
+          <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
+          <NavGroup title="Game Dev" items={["pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       )}
 
@@ -463,11 +436,13 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
-            {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
+            {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
+                {/* 🚢 GLOBAL LANDED COST UI */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
                     <div className="md:col-span-1 lg:col-span-2">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
                         <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
@@ -498,7 +473,7 @@ export default function Home() {
 
                     <div className="md:col-span-1 lg:col-span-2 flex gap-2">
                       <div className="flex-1">
-                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
                         <p className="text-[10px] text-neutral-500 mt-1 ml-2">FOB Invoice value (Req).</p>
                       </div>
                       <div>
@@ -509,7 +484,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Weight" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Actual Weight *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
                       <p className="text-[10px] text-neutral-500 mt-1 ml-2">Gross weight in kg (Req).</p>
                     </div>
 
@@ -519,9 +494,9 @@ export default function Home() {
                     </div>
 
                     <div className="md:col-span-1 lg:col-span-1 grid grid-cols-3 gap-2">
-                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
-                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
-                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm)" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                        <input value={landedForm.l} type="number" min="0" step="any" placeholder="L*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                        <input value={landedForm.w} type="number" min="0" step="any" placeholder="W*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                        <input value={landedForm.h} type="number" min="0" step="any" placeholder="H*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
                     </div>
 
                     <div>
@@ -552,27 +527,28 @@ export default function Home() {
                     </div>
                   </div>
 
+                {/* 🎮 GAME DEV ARAÇLARI UI */}
                 ) : activeTab === "pixel-perfect" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <input value={input} type="number" min="1" step="1" placeholder="Base W (e.g. 1920)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Width</p>
+                        <input value={input} type="number" min="1" step="1" placeholder="Base W (e.g. 1920) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Width (Req)</p>
                     </div>
                     <div>
-                        <input value={input2} type="number" min="1" step="1" placeholder="Base H (e.g. 1080)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Height</p>
+                        <input value={input2} type="number" min="1" step="1" placeholder="Base H (e.g. 1080) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Base Canvas Height (Req)</p>
                     </div>
                     <div>
                         <input value={input3} type="text" placeholder="Target Ratio (e.g. 21:9)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Player's screen ratio</p>
+                        <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Leave blank for default 16:9</p>
                     </div>
                   </div>
 
                 ) : activeTab === "shader-easing" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <input value={input} type="number" min="0" max="1" step="0.01" placeholder="Input X (0.0 to 1.0)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Time or Base Value</p>
+                        <input value={input} type="number" min="0" max="1" step="0.01" placeholder="Input X (0.0 to 1.0) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Time or Base Value (Req)</p>
                     </div>
                     <div>
                         <select value={input2} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)}>
@@ -591,15 +567,16 @@ export default function Home() {
                 ) : activeTab === "dot-product" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <input value={input} type="number" step="any" placeholder="Surface Angle (Deg, e.g. 90)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction surface is facing</p>
+                        <input value={input} type="number" step="any" placeholder="Surface Angle (Deg, e.g. 90) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction surface is facing (Req)</p>
                     </div>
                     <div>
-                        <input value={input2} type="number" step="any" placeholder="Light Angle (Deg, e.g. 45)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction of incoming light</p>
+                        <input value={input2} type="number" step="any" placeholder="Light Angle (Deg, e.g. 45) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Direction of incoming light (Req)</p>
                     </div>
                   </div>
 
+                // ✈️ TRAVEL
                 ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
@@ -622,32 +599,36 @@ export default function Home() {
                       <option value="15">🚇 Public Transport</option><option value="50">🚕 Taxi / Uber</option><option value="70">🚗 Rent a Car</option>
                     </select>
                   </div>
+
+                // 🎸 AKUSTİK (AKILLI TAHMİN)
                 ) : activeTab === "acoustic-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="0.1" step="0.1" placeholder="Width (m) e.g. 4.5" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="0.1" step="0.1" placeholder="Length (m) e.g. 6.0" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="0.1" step="0.1" placeholder="Height (m) e.g. 2.8" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                    <div>
+                        <input value={input} type="number" min="0.1" step="0.1" placeholder="Width (m) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Room width (Req).</p>
+                    </div>
+                    <div>
+                        <input value={input2} type="number" min="0.1" step="0.1" placeholder="Length (m) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                        <p className="text-[10px] text-neutral-500 mt-1 ml-2">Room length (Req).</p>
+                    </div>
+                    <div>
+                        <input value={input3} type="number" min="0.1" step="0.1" placeholder="Height (m)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
+                        <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Leave blank for standard 2.8m.</p>
+                    </div>
                   </div>
-                ) : activeTab === "aspect-calc" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input value={input} type="number" min="1" step="1" placeholder="Orig Width (px) e.g. 1920" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="1" step="1" placeholder="Orig Height (px) e.g. 1080" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                    <input value={input3} type="number" min="1" step="1" placeholder="Target Width (px) e.g. 800" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput3(e.target.value)} />
-                  </div>
-                ) : activeTab === "fps-ms" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input value={input} type="number" min="1" step="1" placeholder="Target FPS (e.g. 60)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" min="0" step="1" placeholder="Frame Count (e.g. 12)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
-                  </div>
+
+                // 🎛️ BPM PITCH
                 ) : activeTab === "pitch-shift" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input value={input} type="number" min="1" step="any" placeholder="Original BPM (e.g. 120)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                     <input value={input2} type="number" step="1" placeholder="Semitones (+ or -) e.g. -2, 3" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
-                ) : activeTab === "circle-fifths" || activeTab === "hex-shader" || activeTab === "note-freq" ? (
+
+                // 📝 STRING GİRDİLERİ
+                ) : ["circle-fifths", "note-freq"].includes(activeTab) ? (
                   <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                ) : activeTab === "stats-calc" ? (
-                  <textarea value={input} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none h-32 focus:border-emerald-500" placeholder="E.g. 10.5, 20.3, 45, 90..." onChange={(e) => setInput(e.target.value)} />
+
+                // 🔢 STANDART SAYI GİRDİLERİ
                 ) : (
                   <input value={input} type="number" min="0" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 )}
@@ -655,6 +636,8 @@ export default function Home() {
                 <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
                 <pre className="p-4 md:p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-xs md:text-sm whitespace-pre-wrap overflow-x-auto leading-relaxed">{output || "Awaiting execution..."}</pre>
               </div>
+
+            // 💻 GELİŞTİRİCİ ARAÇLARI (TEXTAREA)
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <textarea value={input} className="h-48 md:h-96 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} placeholder="Paste data here..." />
