@@ -48,7 +48,6 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
-      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU
       case 'landed':
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
@@ -200,7 +199,7 @@ export default function Home() {
         setOutput(`Data Points: ${nums.length}\nMean (Avg): ${mean.toFixed(2)}\nMedian: ${median}\nMin/Max: ${nums[0]} / ${nums[nums.length-1]}\nStandard Deviation: ${stdDev.toFixed(2)}`);
         break;
 
-      // 🎮 GAME DEV: YENİ ARAÇLAR
+      // 🎮 YENİ EKLENEN PRO GAME DEV ARAÇLARI MATEMATİĞİ
       case 'pixel':
         const bW = parseFloat(input);
         const bH = parseFloat(input2);
@@ -228,10 +227,10 @@ export default function Home() {
             advice = "No scaling issues. UI will fit perfectly without distortion.";
         } else if (targetRatio > baseRatio) {
             scaleResult = "🟡 Pillarboxing Occurs (Black Bars on Left/Right)";
-            advice = "Target screen is WIDER than base UI (e.g., Ultrawide). Ensure UI elements are anchored to the edges (Left/Right) or they will float in the middle.";
+            advice = "Target screen is WIDER than base UI (e.g. Ultrawide). Ensure UI elements are anchored to the edges (Left/Right).";
         } else {
             scaleResult = "🔴 Letterboxing Occurs (Black Bars on Top/Bottom)";
-            advice = "Target screen is TALLER than base UI (e.g., iPad 4:3). Make sure your top and bottom UI elements aren't anchored absolutely, or they might overlap vertically.";
+            advice = "Target screen is TALLER than base UI (e.g. iPad 4:3). Make sure your top/bottom elements aren't anchored absolutely.";
         }
         
         setOutput(`🎮 PIXEL PERFECT UI SCALER\n==========================================\nBase Resolution : ${bW}x${bH} (Ratio: ${baseRatio.toFixed(3)})\nTarget Screen   : ${targetRatioStr} (Ratio: ${targetRatio.toFixed(3)})\n\n--- SCALE RESULT ---\n${scaleResult}\n\n💡 Dev Advice:\n${advice}`);
@@ -405,10 +404,10 @@ export default function Home() {
     "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
     "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
     "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
-    // 🎮 YENİ GAME DEV METADATASI
-    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base Resolution (W/H) and Target Screen Ratio (e.g. 21:9).", why: "Calculates letterboxing and safe zones to prevent UI stretching on ultrawide or iPad screens." },
-    "shader-easing": { name: "Shader Easing Visualizer", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) used for smooth animations and glowing shaders." },
-    "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math. Calculates brightness based on light hitting a surface normal." }
+    // 🎮 İŞTE BURASI: ESKİLER SİLİNDİ, YENİ GAME DEV ARAÇLARI EKLENDİ!
+    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide/iPad." },
+    "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
+    "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -438,7 +437,7 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          {/* YENİ GAME DEV LİSTESİ */}
+          {/* LERP, FOV, DELTA SİLİNDİ. YENİLERİ GELDİ */}
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       </aside>
@@ -452,6 +451,7 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
+          {/* LERP, FOV, DELTA SİLİNDİ. YENİLERİ GELDİ */}
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       )}
@@ -608,7 +608,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                // ✈️ TRAVEL VE DİĞERLERİ AYNEN KORUNDU
+                // ✈️ TRAVEL VE DİĞERLERİ
                 ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
