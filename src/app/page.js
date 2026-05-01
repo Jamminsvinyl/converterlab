@@ -48,12 +48,11 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
-      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU
-      case 'landed':
+      
+      case 'landed-cost':
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
         const kg = parseFloat(landedForm.weight);
-        
         let dutyRate = parseFloat(landedForm.duty) || 0;
         let vatRate = parseFloat(landedForm.vat) || 0;
 
@@ -68,8 +67,7 @@ export default function Home() {
         let dispatchNote = "";
 
         if (landedForm.freightMethod === "air") {
-            transitDays = "1 - 5 Days";
-            dispatchNote = "Airway Bill (AWB) cutoff is usually 24-48h prior to flight departure.";
+            transitDays = "1 - 5 Days"; dispatchNote = "Airway Bill (AWB) cutoff is usually 24-48h prior to flight departure.";
             if (isNaN(frRate) || frRate <= 0) {
                 if (landedForm.route === "TR_EU") frRate = 4.5;
                 else if (landedForm.route === "TR_US") frRate = 6.5;
@@ -77,8 +75,7 @@ export default function Home() {
                 else frRate = 5.0;
             }
         } else if (landedForm.freightMethod === "sea") {
-            transitDays = "20 - 45 Days";
-            dispatchNote = "Bill of Lading (B/L) closing is usually 3-5 days before vessel departure.";
+            transitDays = "20 - 45 Days"; dispatchNote = "Bill of Lading (B/L) closing is usually 3-5 days before vessel departure.";
             if (isNaN(frRate) || frRate <= 0) {
                 if (landedForm.route === "TR_EU") frRate = 0.5;
                 else if (landedForm.route === "TR_US") frRate = 1.2;
@@ -86,8 +83,7 @@ export default function Home() {
                 else frRate = 1.0;
             }
         } else if (landedForm.freightMethod === "road") {
-            transitDays = "7 - 14 Days";
-            dispatchNote = "CMR/Truck dispatch requires booking and loading 2-3 days in advance.";
+            transitDays = "7 - 14 Days"; dispatchNote = "CMR/Truck dispatch requires booking and loading 2-3 days in advance.";
             if (isNaN(frRate) || frRate <= 0) {
                 if (landedForm.route === "TR_EU") frRate = 1.5;
                 else if (landedForm.route === "TR_US") { frRate = 6.5; transitDays = "N/A (Use Air/Sea)"; }
@@ -101,10 +97,7 @@ export default function Home() {
         }
 
         let insRate = parseFloat(landedForm.ins);
-        if (isNaN(insRate)) {
-            insRate = 1.0;
-            autoNotes.push(`• Insurance: Defaulted to industry standard 1.0% of Goods Value.`);
-        }
+        if (isNaN(insRate)) { insRate = 1.0; autoNotes.push(`• Insurance: Defaulted to industry standard 1.0% of Goods Value.`); }
         
         let extra = parseFloat(landedForm.extra);
         if (isNaN(extra)) {
@@ -116,8 +109,7 @@ export default function Home() {
 
         let tradeMsg = `🏦 CUSTOMS BASIS (CIF VALUE)\n`;
         if (landedForm.tradeType === "ata_carnet") {
-            dutyRate = 0;
-            vatRate = 0;
+            dutyRate = 0; vatRate = 0;
             tradeMsg = `🎟️ ATA CARNET (EXHIBITION / TEMP EXPORT) APPLIED\n* Duty & VAT are exempted for temporary exhibition goods returning in original state.\n\n🏦 CUSTOMS BASIS (CIF VALUE)\n`;
         }
 
@@ -130,7 +122,6 @@ export default function Home() {
         const vatBase = cif + dutyAmt; 
         const vatAmt = vatBase * (vatRate / 100);
         const totalLanded = cif + dutyAmt + vatAmt + extra;
-
         const curr = landedForm.curr;
         const fmt = (amt) => new Intl.NumberFormat('en-US', { style: 'currency', currency: curr }).format(amt);
 
@@ -144,35 +135,10 @@ export default function Home() {
             autoFillText = `\n\n💡 AUTO-ESTIMATES APPLIED\n------------------------------------------\nSince some fields were left blank, the system applied standard industry estimates:\n${autoNotes.join('\n')}\n* For exact results, input real quotes from your forwarder.`;
         }
 
-        setOutput(
-          `🚢 GLOBAL LANDED COST REPORT\n` +
-          `==========================================\n` +
-          `⏱️ TRANSIT & LOGISTICS\n` +
-          `Method        : ${landedForm.freightMethod.toUpperCase()} FREIGHT\n` +
-          `Est. Transit  : ${transitDays}\n` +
-          `Dispatch Rule : ${dispatchNote}\n\n` +
-          `📦 FREIGHT CALCULATION (Route: ${landedForm.route.replace('_', ' ➡️ ')})\n` +
-          `Dimensions    : ${l}x${w}x${h} cm\n` +
-          `Actual Weight : ${kg.toFixed(2)} kg\n` +
-          `Volumetric Wt : ${volKg.toFixed(2)} kg (IATA Divisor: 5000)\n` +
-          `Chargeable Wt : ${chargeableKg.toFixed(2)} kg\n` +
-          `Freight Cost  : ${fmt(freightCost)} (${fmt(frRate)}/kg)\n\n` +
-          tradeMsg +
-          `Goods Value   : ${fmt(val)}\n` +
-          `Insurance     : ${fmt(insAmt)} (${insRate}% of Goods)\n` +
-          `CIF Matrah    : ${fmt(cif)}\n\n` +
-          `⚖️ TAXES & DUTIES\n` +
-          `Customs Duty  : ${fmt(dutyAmt)} (${dutyRate}% of CIF)\n` +
-          `VAT Base      : ${fmt(vatBase)} (CIF + Duty)\n` +
-          `VAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\n` +
-          `Broker/Extra  : ${fmt(extra)}\n` +
-          `------------------------------------------\n` +
-          `💰 TOTAL LANDED COST: ${fmt(totalLanded)}\n` + warnMsg + autoFillText
-        );
+        setOutput(`🚢 GLOBAL LANDED COST REPORT\n==========================================\n⏱️ TRANSIT & LOGISTICS\nMethod        : ${landedForm.freightMethod.toUpperCase()} FREIGHT\nEst. Transit  : ${transitDays}\nDispatch Rule : ${dispatchNote}\n\n📦 FREIGHT CALCULATION (Route: ${landedForm.route.replace('_', ' ➡️ ')})\nDimensions    : ${l}x${w}x${h} cm\nActual Weight : ${kg.toFixed(2)} kg\nVolumetric Wt : ${volKg.toFixed(2)} kg (IATA Divisor: 5000)\nChargeable Wt : ${chargeableKg.toFixed(2)} kg\nFreight Cost  : ${fmt(freightCost)} (${fmt(frRate)}/kg)\n\n${tradeMsg}Goods Value   : ${fmt(val)}\nInsurance     : ${fmt(insAmt)} (${insRate}% of Goods)\nCIF Matrah    : ${fmt(cif)}\n\n⚖️ TAXES & DUTIES\nCustoms Duty  : ${fmt(dutyAmt)} (${dutyRate}% of CIF)\nVAT Base      : ${fmt(vatBase)} (CIF + Duty)\nVAT Tax       : ${fmt(vatAmt)} (${vatRate}%)\nBroker/Extra  : ${fmt(extra)}\n------------------------------------------\n💰 TOTAL LANDED COST: ${fmt(totalLanded)}\n${warnMsg}${autoFillText}`);
         break;
 
-      // ✈️ SEYAHAT MOTORU
-      case 'travel':
+      case 'travel-calc':
         const tDays = parseInt(travelForm.days);
         if(!tDays || tDays <= 0 || tDays > 365) { setOutput("⚠️ ERROR: Duration must be between 1 and 365 days."); return; }
         const tIndex = parseFloat(travelForm.destVal);
@@ -183,83 +149,135 @@ export default function Home() {
         const totalUSD = dailyUSD * tDays;
         const bufferTotalUSD = totalUSD * 1.10; 
         const rate = exchangeRates[travelForm.currency] || 1;
-        const formatCurr = (amt, c) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: c }).format(amt);
+        const formatCurrT = (amt, c) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: c }).format(amt);
         
         let hotelLabel = tHotelMult === 3.5 ? "5★ Executive" : tHotelMult === 1.8 ? "4★ Business" : "3★ Economy";
         let foodLabel = tFood === 150 ? "Fine Dining" : tFood === 70 ? "Medium/Standard" : "Budget/Fast Food";
         let transLabel = tTransport === 70 ? "Rent a Car" : tTransport === 50 ? "Taxi/Uber" : "Public Transport";
 
-        setOutput(`✈️ TRAVEL EXPENSE REPORT\n==========================================\nLocation      : ${travelForm.destName}\nDuration      : ${tDays} Days\nAccommodation : ${hotelLabel}\nDaily Food    : ${foodLabel}\nLogistics     : ${transLabel}\n------------------------------------------\n💰 ESTIMATED BUDGET: ${formatCurr(bufferTotalUSD * rate, travelForm.currency)}\n------------------------------------------\nAvg Daily Cost: ${formatCurr((dailyUSD * 1.10) * rate, travelForm.currency)}\nLive Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n*Includes 10% corporate safety margin.`);
+        setOutput(`✈️ TRAVEL EXPENSE REPORT\n==========================================\nLocation      : ${travelForm.destName}\nDuration      : ${tDays} Days\nAccommodation : ${hotelLabel}\nDaily Food    : ${foodLabel}\nLogistics     : ${transLabel}\n------------------------------------------\n💰 ESTIMATED BUDGET: ${formatCurrT(bufferTotalUSD * rate, travelForm.currency)}\n------------------------------------------\nAvg Daily Cost: ${formatCurrT((dailyUSD * 1.10) * rate, travelForm.currency)}\nLive Exch Rate: 1 USD = ${rate.toFixed(2)} ${travelForm.currency}\n\n*Includes 10% corporate safety margin.`);
         break;
 
-      // 🎮 GAME DEV MOTORLARI
-      case 'pixel':
-        const bW = parseFloat(input);
-        const bH = parseFloat(input2);
-        const targetRatioStr = input3.trim() || "16:9";
-        
-        if (isNaN(bW) || isNaN(bH) || bW <= 0 || bH <= 0) {
-            setOutput("⚠️ ERROR: Please enter a valid Base Width and Height (e.g., 1920 and 1080)."); return;
-        }
-        
-        const ratioParts = targetRatioStr.split(':');
-        if (ratioParts.length !== 2 || isNaN(parseFloat(ratioParts[0])) || isNaN(parseFloat(ratioParts[1]))) {
-            setOutput("⚠️ ERROR: Target Ratio must be in 'W:H' format (e.g., 21:9 or 4:3)."); return;
-        }
-        
-        const tRW = parseFloat(ratioParts[0]);
-        const tRH = parseFloat(ratioParts[1]);
-        const baseRatio = bW / bH;
-        const targetRatio = tRW / tRH;
+      case 'json-csv':
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
+        try {
+            let data = JSON.parse(input);
+            if (!Array.isArray(data)) data = [data]; 
+            if (data.length === 0) { setOutput("Empty Array."); return; }
+            const keys = Object.keys(data[0]);
+            let csvStr = keys.join(",") + "\n";
+            data.forEach(row => {
+                csvStr += keys.map(k => {
+                    let cell = row[k] === null || row[k] === undefined ? "" : String(row[k]);
+                    cell = cell.replace(/"/g, '""');
+                    return `"${cell}"`;
+                }).join(",") + "\n";
+            });
+            setOutput(csvStr);
+        } catch(err) { setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message); }
+        break;
 
-        let scaleResult = "";
-        let advice = "";
+      case 'jwt-decoder':
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a JWT."); return; }
+        try {
+            const parts = input.split('.');
+            if(parts.length !== 3) throw new Error("A JWT must have exactly 3 parts separated by dots.");
+            const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            setOutput(`--- HEADER ---\n${JSON.stringify(header, null, 2)}\n\n--- PAYLOAD ---\n${JSON.stringify(payload, null, 2)}\n\n--- SIGNATURE ---\n[Hidden/Binary]`);
+        } catch(err) { setOutput("⚠️ ERROR: Invalid JWT.\n" + err.message); }
+        break;
+
+      case 'sql-format':
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a SQL query."); return; }
+        let formatted = input.replace(/\s+/g, ' ')
+          .replace(/\s*(SELECT|FROM|WHERE|INNER JOIN|LEFT JOIN|RIGHT JOIN|GROUP BY|ORDER BY|LIMIT|INSERT INTO|VALUES|UPDATE|SET|DELETE FROM)\s*/gi, '\n\n$1\n  ')
+          .replace(/,/g, ',\n  ')
+          .replace(/ AND /gi, '\n  AND ')
+          .replace(/ OR /gi, '\n  OR ');
+        setOutput(formatted.trim());
+        break;
+
+      case 'curl-code':
+        if (!input.trim().startsWith('curl')) { setOutput("⚠️ ERROR: Input must start with 'curl'."); return; }
+        const urlMatch = input.match(/'(https?:\/\/[^']+)'/);
+        const methodMatch = input.match(/-X\s+([A-Z]+)/);
+        const headerMatches = [...input.matchAll(/-H\s+'([^']+)'/g)];
+        const dataMatch = input.match(/--data-raw\s+'([^']+)'/);
         
-        if (Math.abs(baseRatio - targetRatio) < 0.01) {
-            scaleResult = "🟢 Perfect Match!";
-            advice = "No scaling issues. UI will fit perfectly without distortion.";
-        } else if (targetRatio > baseRatio) {
-            scaleResult = "🟡 Pillarboxing Occurs (Black Bars on Left/Right)";
-            advice = "Target screen is WIDER than base UI (e.g. Ultrawide). Ensure UI elements are anchored to the edges (Left/Right).";
-        } else {
-            scaleResult = "🔴 Letterboxing Occurs (Black Bars on Top/Bottom)";
-            advice = "Target screen is TALLER than base UI (e.g. iPad 4:3). Make sure your top/bottom elements aren't anchored absolutely.";
+        const method = methodMatch ? methodMatch[1] : 'GET';
+        const url = urlMatch ? urlMatch[1] : 'API_URL_HERE';
+        const body = dataMatch ? dataMatch[1] : '';
+        
+        let fetchCode = `fetch('${url}', {\n  method: '${method}',\n  headers: {`;
+        headerMatches.forEach(h => {
+            const [k, v] = h[1].split(': ');
+            fetchCode += `\n    '${k}': '${v}',`;
+        });
+        fetchCode += `\n  }`;
+        if (body) fetchCode += `,\n  body: JSON.stringify(${body})`;
+        fetchCode += `\n})\n.then(res => res.json())\n.then(data => console.log(data))\n.catch(err => console.error(err));`;
+        
+        setOutput(`// Javascript Fetch Equivalent\n\n${fetchCode}`);
+        break;
+
+      case 'diff-checker':
+        if (!input && !input2) { setOutput("⚠️ ERROR: Please paste Original and New text."); return; }
+        const oldL = input.split('\n');
+        const newL = input2.split('\n');
+        let diffOut = "";
+        let changes = 0;
+        const maxL = Math.max(oldL.length, newL.length);
+        for(let i=0; i<maxL; i++) {
+            if (oldL[i] !== newL[i]) {
+                changes++;
+                if(oldL[i] !== undefined) diffOut += `🔴 [-] Line ${i+1}: ${oldL[i]}\n`;
+                if(newL[i] !== undefined) diffOut += `🟢 [+] Line ${i+1}: ${newL[i]}\n`;
+                diffOut += `\n`;
+            }
         }
+        if(changes === 0) setOutput("✅ Texts are 100% identical.");
+        else setOutput(`⚠️ FOUND ${changes} LINE DIFFERENCE(S)\n==========================================\n\n${diffOut}`);
+        break;
+
+      case 'pixel-perfect':
+        const bW = parseFloat(input); const bH = parseFloat(input2); const targetRatioStr = input3.trim() || "16:9";
+        if (isNaN(bW) || isNaN(bH) || bW <= 0 || bH <= 0) { setOutput("⚠️ ERROR: Please enter a valid Base Width and Height (e.g., 1920 and 1080)."); return; }
+        const ratioParts = targetRatioStr.split(':');
+        if (ratioParts.length !== 2 || isNaN(parseFloat(ratioParts[0])) || isNaN(parseFloat(ratioParts[1]))) { setOutput("⚠️ ERROR: Target Ratio must be in 'W:H' format (e.g., 21:9 or 4:3)."); return; }
         
+        const tRW = parseFloat(ratioParts[0]); const tRH = parseFloat(ratioParts[1]);
+        const baseRatio = bW / bH; const targetRatio = tRW / tRH;
+
+        let scaleResult = ""; let advice = "";
+        if (Math.abs(baseRatio - targetRatio) < 0.01) {
+            scaleResult = "🟢 Perfect Match!"; advice = "No scaling issues. UI will fit perfectly without distortion.";
+        } else if (targetRatio > baseRatio) {
+            scaleResult = "🟡 Pillarboxing Occurs (Black Bars on Left/Right)"; advice = "Target screen is WIDER than base UI (e.g. Ultrawide). Ensure UI elements are anchored to the edges (Left/Right).";
+        } else {
+            scaleResult = "🔴 Letterboxing Occurs (Black Bars on Top/Bottom)"; advice = "Target screen is TALLER than base UI (e.g. iPad 4:3). Make sure your top/bottom elements aren't anchored absolutely.";
+        }
         setOutput(`🎮 PIXEL PERFECT UI SCALER\n==========================================\nBase Resolution : ${bW}x${bH} (Ratio: ${baseRatio.toFixed(3)})\nTarget Screen   : ${targetRatioStr} (Ratio: ${targetRatio.toFixed(3)})\n\n--- SCALE RESULT ---\n${scaleResult}\n\n💡 Dev Advice:\n${advice}`);
         break;
 
-      case 'shader':
-        const xVal = parseFloat(input);
-        const easeType = input2 || "smoothstep";
-        const exponent = parseFloat(input3) || 2;
-        
-        if (isNaN(xVal) || xVal < 0 || xVal > 1) {
-            setOutput("⚠️ ERROR: Input X must be between 0.0 and 1.0."); return;
-        }
+      case 'shader-easing':
+        const xVal = parseFloat(input); const easeType = input2 || "smoothstep"; const exponent = parseFloat(input3) || 2;
+        if (isNaN(xVal) || xVal < 0 || xVal > 1) { setOutput("⚠️ ERROR: Input X must be between 0.0 and 1.0."); return; }
         
         let yVal = 0;
-        if (easeType === "smoothstep") {
-            yVal = xVal * xVal * (3.0 - 2.0 * xVal);
-        } else if (easeType === "pow") {
-            yVal = Math.pow(xVal, exponent);
-        } else if (easeType === "sine") {
-            yVal = Math.sin(xVal * Math.PI / 2); 
-        }
+        if (easeType === "smoothstep") yVal = xVal * xVal * (3.0 - 2.0 * xVal);
+        else if (easeType === "pow") yVal = Math.pow(xVal, exponent);
+        else if (easeType === "sine") yVal = Math.sin(xVal * Math.PI / 2); 
 
         const barLength = 30;
         const filled = Math.max(0, Math.min(barLength, Math.round(yVal * barLength)));
         const bar = "█".repeat(filled) + "░".repeat(barLength - filled);
-
         setOutput(`🔮 SHADER EASING VISUALIZER\n==========================================\nFunction : ${easeType.toUpperCase()}\nInput X  : ${xVal.toFixed(3)}\n\n--- MATH RESULT ---\nOutput Y : ${yVal.toFixed(4)}\n\nCurve Vis: [${bar}]`);
         break;
 
-      case 'dot':
-        const surfAngle = parseFloat(input);
-        const lightAngle = parseFloat(input2);
-        if (isNaN(surfAngle) || isNaN(lightAngle)) {
-            setOutput("⚠️ ERROR: Please enter valid angles in degrees (e.g., 0 and 45)."); return;
-        }
+      case 'dot-product':
+        const surfAngle = parseFloat(input); const lightAngle = parseFloat(input2);
+        if (isNaN(surfAngle) || isNaN(lightAngle)) { setOutput("⚠️ ERROR: Please enter valid angles in degrees (e.g., 0 and 45)."); return; }
         
         const diffRad = (lightAngle - surfAngle) * (Math.PI / 180);
         const dotProd = Math.cos(diffRad);
@@ -274,8 +292,7 @@ export default function Home() {
         setOutput(`🔦 VECTOR DOT PRODUCT (LIGHTING)\n==========================================\nSurface Normal Angle : ${surfAngle}°\nLight Source Angle   : ${lightAngle}°\n\n--- CALCULATION ---\nDot Product (Cos θ)  : ${dotProd.toFixed(4)}\nClamped Brightness   : ${brightness.toFixed(4)}\n\n💡 Shader State:\n${lightDesc}\n\n*Note: In shaders, dot(N, L) < 0 means the light hits the back of the object.`);
         break;
 
-      // 🎶 MÜZİK MOTORLARI
-      case 'freq':
+      case 'freq-note':
         const hz = parseFloat(input);
         if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
         const midi = 12 * (Math.log2(hz / 440)) + 69;
@@ -285,14 +302,14 @@ export default function Home() {
         setOutput(`Detected Note: ${keysSharp[roundedMidi % 12]}${Math.floor(roundedMidi / 12) - 1}\nMIDI Note Number: ${roundedMidi}\nPerfect Pitch Freq: ${exactFreq.toFixed(2)} Hz\nDetune: ${cents > 0 ? '+' : ''}${cents} Cents`);
         break;
 
-      case 'bpm':
+      case 'bpm-ms':
         const bpmVal = parseFloat(input);
         if(isNaN(bpmVal) || bpmVal <= 0 || bpmVal > 999) { setOutput("⚠️ ERROR: BPM must be a positive number between 1 and 999."); return; }
         const bpmMs = (60000 / bpmVal).toFixed(2);
         setOutput(`1/4 Note (Quarter): ${bpmMs} ms\n1/8 Note (Eighth): ${(bpmMs/2).toFixed(2)} ms\n1/16 Note (Sixteenth): ${(bpmMs/4).toFixed(2)} ms`);
         break;
 
-      case 'acoustic':
+      case 'acoustic-calc':
         const acW = parseFloat(input), acL = parseFloat(input2);
         let acH = parseFloat(input3);
         let autoHNote = "";
@@ -300,18 +317,15 @@ export default function Home() {
         if(isNaN(acW) || isNaN(acL) || acW <= 0 || acL <= 0) { 
             setOutput("⚠️ ERROR: Room Width and Length are mandatory fields (> 0 meters)."); return; 
         }
-
-        // AKUSTİK MOTORU İÇİN AKILLI TAHMİN (AUTO-ESTIMATE)
         if(isNaN(acH) || acH <= 0) {
             acH = 2.8;
             autoHNote = "\n\n💡 AUTO-ESTIMATE APPLIED:\nCeiling height left blank. System defaulted to standard 2.8 meters.";
         }
-
         const area = 2 * (acW * acL + acL * acH + acW * acH);
         setOutput(`Total Room Surface Area: ${area.toFixed(1)} m²\n\n--- MINIMUM TREATMENT REQUIREMENTS ---\nAbsorption Panels (18%): ${(area * 0.18).toFixed(1)} m²\nDiffusion Panels (7%): ${(area * 0.07).toFixed(1)} m²${autoHNote}`);
         break;
 
-      case 'circle':
+      case 'circle-fifths':
         const cleanNote = input.trim().charAt(0).toUpperCase() + input.trim().slice(1).toLowerCase();
         const noteMap = { "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4, "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9, "A#":10, "Bb":10, "B":11 };
         const rootIdx = noteMap[cleanNote];
@@ -322,9 +336,8 @@ export default function Home() {
         setOutput(`ROOT KEY: ${keysSharp[rootIdx]} Major / ${cleanNote !== keysSharp[rootIdx] ? '('+cleanNote+' Major)' : ''}\n==========================================\nPerfect 4th (Subdominant) : ${subdominant} Major\nPerfect 5th (Dominant)    : ${dominant} Major\nRelative Minor Scale      : ${relMinor} Minor (${relMinor}m)\n\n*Use these chords for foundational harmonic progressions.`);
         break;
 
-      case 'pitch':
-        const origBpm = parseFloat(input);
-        const semitones = parseFloat(input2);
+      case 'pitch-shift':
+        const origBpm = parseFloat(input); const semitones = parseFloat(input2);
         if(isNaN(origBpm) || origBpm <= 0) { setOutput("⚠️ ERROR: Original BPM must be a positive number."); return; }
         if(isNaN(semitones)) { setOutput("⚠️ ERROR: Semitone shift must be a valid number (e.g., 3 or -2)."); return; }
         const newBpm = origBpm * Math.pow(2, semitones / 12);
@@ -335,9 +348,7 @@ export default function Home() {
         const noteRegex = /^([a-gA-G])([#b]?)(-?\d+)$/;
         const match = input.trim().match(noteRegex);
         if(!match) { setOutput("⚠️ ERROR: Invalid format. Please enter a Note and Octave (e.g., C4, F#3, Bb2)."); return; }
-        const nLetter = match[1].toUpperCase();
-        const nAccidental = match[2].toLowerCase();
-        const nOctave = parseInt(match[3]);
+        const nLetter = match[1].toUpperCase(); const nAccidental = match[2].toLowerCase(); const nOctave = parseInt(match[3]);
         const nMap = { "C":0, "D":2, "E":4, "F":5, "G":7, "A":9, "B":11 };
         let baseMidi = nMap[nLetter];
         if(nAccidental === '#') baseMidi += 1;
@@ -354,26 +365,19 @@ export default function Home() {
   };
 
   const toolData = {
-    // 💼 BİZNES & DATA
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
     "landed-cost": { name: "Global Landed Cost", how: "Select Route/Trade Type. Enter Value & Wt. Blank fields auto-estimate.", why: "AI-assisted broker simulator for transit times, CIF duties, and ATA Carnets." },
-    
-    // 💻 GELİŞTİRİCİ
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Rapid data integration and database parsing." },
-    "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and code conversion." },
+    "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and JS code conversion." },
     "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused token decoding. No server calls are made." },
     "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
     "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
-    
-    // 🎶 MÜZİK LAB
     "circle-fifths": { name: "Circle of Fifths", how: "Enter Root Note (e.g. C, F#, Db, Bb). String Input.", why: "Calculates perfect 4th, 5th, and relative minor keys for harmony." },
     "pitch-shift": { name: "Pitch Shift BPM", how: "Enter Original BPM (e.g. 120) and Shift in Semitones (+/-).", why: "Calculates the exact new BPM of an audio sample when re-pitched." },
     "note-freq": { name: "Note to Frequency", how: "Enter Note and Octave (e.g. C4, F#3, Bb2). String Input.", why: "Identifies the Hertz (Hz) value of a specific MIDI note for LFO design." },
     "bpm-ms": { name: "BPM to Delay", how: "Enter track tempo (Range: 1 - 999 BPM).", why: "Calculates precise millisecond (ms) timings for delay/reverb effects." },
     "freq-note": { name: "Freq to Note Analyzer", how: "Enter pitch frequency (Range: 10 - 20000 Hz).", why: "Detects nearest MIDI note and detune in cents for kick drum tuning." },
     "acoustic-calc": { name: "Room Treatment", how: "Enter W/L. Leave Height blank for 2.8m standard.", why: "Calculates surface area and minimum acoustic panel requirements." },
-    
-    // 🎮 GAME DEV (PREMIUM)
     "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide screens." },
     "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
     "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
@@ -403,7 +407,6 @@ export default function Home() {
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0 px-4">
         <div className="py-8 px-4 border-b border-neutral-800 mb-4"><h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1></div>
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
-          {/* MENÜ TERTEMİZ: GEREKSİZLER ATILDI */}
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
@@ -436,13 +439,12 @@ export default function Home() {
           <p className="text-neutral-500 text-[10px] md:text-xs mb-8 italic">{toolData[activeTab]?.how}</p>
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8">
+            
             {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    
                     <div className="md:col-span-1 lg:col-span-2">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
                         <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
@@ -527,7 +529,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                {/* 🎮 GAME DEV ARAÇLARI UI */}
                 ) : activeTab === "pixel-perfect" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -576,7 +577,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                // ✈️ TRAVEL
                 ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
@@ -600,7 +600,6 @@ export default function Home() {
                     </select>
                   </div>
 
-                // 🎸 AKUSTİK (AKILLI TAHMİN)
                 ) : activeTab === "acoustic-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -617,31 +616,37 @@ export default function Home() {
                     </div>
                   </div>
 
-                // 🎛️ BPM PITCH
                 ) : activeTab === "pitch-shift" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input value={input} type="number" min="1" step="any" placeholder="Original BPM (e.g. 120)" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
-                    <input value={input2} type="number" step="1" placeholder="Semitones (+ or -) e.g. -2, 3" className="bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
+                    <input value={input} type="number" min="1" step="any" placeholder="Original BPM (e.g. 120)" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
+                    <input value={input2} type="number" step="1" placeholder="Semitones (+ or -) e.g. -2, 3" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} />
                   </div>
 
-                // 📝 STRING GİRDİLERİ
                 ) : ["circle-fifths", "note-freq"].includes(activeTab) ? (
                   <input value={input} type="text" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-2xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
 
-                // 🔢 STANDART SAYI GİRDİLERİ
                 ) : (
                   <input value={input} type="number" min="0" step="any" placeholder={toolData[activeTab]?.how} className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-xl md:text-3xl font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} />
                 )}
                 
-                <button onClick={() => calculateLogic(activeTab.split('-')[0])} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
+                <button onClick={() => calculateLogic(activeTab)} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
                 <pre className="p-4 md:p-6 bg-black rounded-xl border border-neutral-800 text-emerald-500 font-mono text-xs md:text-sm whitespace-pre-wrap overflow-x-auto leading-relaxed">{output || "Awaiting execution..."}</pre>
               </div>
 
-            // 💻 GELİŞTİRİCİ ARAÇLARI (TEXTAREA)
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <textarea value={input} className="h-48 md:h-96 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} placeholder="Paste data here..." />
-                <textarea value={output} className="h-48 md:h-96 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" readOnly placeholder="Result..." />
+              <div className="space-y-6">
+                {activeTab === "diff-checker" ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <textarea value={input} className="h-48 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} placeholder="Original Text (Left)..." />
+                    <textarea value={input2} className="h-48 bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput2(e.target.value)} placeholder="New Text (Right)..." />
+                  </div>
+                ) : (
+                  <textarea value={input} className="h-48 w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono outline-none focus:border-emerald-500" onChange={(e) => setInput(e.target.value)} placeholder={toolData[activeTab]?.how} />
+                )}
+                
+                <button onClick={() => calculateLogic(activeTab)} className="w-full md:w-auto px-10 py-4 bg-emerald-600 text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-emerald-900/20 uppercase text-sm tracking-widest">PROCESS DATA</button>
+                
+                <textarea value={output} className="h-64 w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none" readOnly placeholder="Result will appear here..." />
               </div>
             )}
           </div>
