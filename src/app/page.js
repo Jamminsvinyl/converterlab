@@ -199,7 +199,6 @@ export default function Home() {
         setOutput(`Data Points: ${nums.length}\nMean (Avg): ${mean.toFixed(2)}\nMedian: ${median}\nMin/Max: ${nums[0]} / ${nums[nums.length-1]}\nStandard Deviation: ${stdDev.toFixed(2)}`);
         break;
 
-      // 🎮 YENİ EKLENEN PRO GAME DEV ARAÇLARI MATEMATİĞİ
       case 'pixel':
         const bW = parseFloat(input);
         const bH = parseFloat(input2);
@@ -281,7 +280,6 @@ export default function Home() {
         setOutput(`🔦 VECTOR DOT PRODUCT (LIGHTING)\n==========================================\nSurface Normal Angle : ${surfAngle}°\nLight Source Angle   : ${lightAngle}°\n\n--- CALCULATION ---\nDot Product (Cos θ)  : ${dotProd.toFixed(4)}\nClamped Brightness   : ${brightness.toFixed(4)}\n\n💡 Shader State:\n${lightDesc}\n\n*Note: In shaders, dot(N, L) < 0 means the light hits the back of the object.`);
         break;
 
-      // 🎶 MÜZİK VE DİĞER ARAÇLAR
       case 'freq':
         const hz = parseFloat(input);
         if(isNaN(hz) || hz < 10 || hz > 20000) { setOutput("⚠️ ERROR: Frequency must be a valid number between 10 Hz and 20000 Hz."); return; }
@@ -404,7 +402,6 @@ export default function Home() {
     "aspect-calc": { name: "Resolution Scaler", how: "Enter Original W/H (px) and Target Width (px).", why: "Maintains aspect ratio for pixel-perfect UI scaling across monitors." },
     "hex-shader": { name: "Color to Shader", how: "Enter 6-digit Hex color code (String: #FF5733).", why: "Shaders and engine materials require colors in normalized 0.0 - 1.0 format." },
     "fps-ms": { name: "Frame Timing (FPS)", how: "Enter Target FPS (>0) and Frame Count (>=0).", why: "Calculates hitstun, animation durations, and tick rates in milliseconds (ms)." },
-    // 🎮 İŞTE BURASI: ESKİLER SİLİNDİ, YENİ GAME DEV ARAÇLARI EKLENDİ!
     "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide/iPad." },
     "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
     "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
@@ -437,7 +434,6 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          {/* LERP, FOV, DELTA SİLİNDİ. YENİLERİ GELDİ */}
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       </aside>
@@ -451,7 +447,6 @@ export default function Home() {
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost", "stats-calc"]} />
           <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "base64", "sql-format", "diff-checker", "markdown"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "acoustic-calc"]} />
-          {/* LERP, FOV, DELTA SİLİNDİ. YENİLERİ GELDİ */}
           <NavGroup title="Game Dev" items={["deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
       )}
@@ -471,10 +466,8 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "stats-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "deg-rad", "aspect-calc", "hex-shader", "fps-ms", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    
                     <div className="md:col-span-1 lg:col-span-2">
                       <select className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, route: e.target.value})}>
                         <option value="TR_EU">🇹🇷 TR ➡️ 🇪🇺 EU / 🇬🇧 UK (Export)</option>
@@ -559,7 +552,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                {/* 🎮 YENİ GAME DEV ARAÇLARI UI */}
                 ) : activeTab === "pixel-perfect" ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -608,7 +600,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                // ✈️ TRAVEL VE DİĞERLERİ
                 ) : activeTab === "travel-calc" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <select className="bg-black border border-neutral-800 rounded-xl p-4 text-base font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => { const selected = destinations.find(d => d.val === e.target.value); setTravelForm({...travelForm, destVal: e.target.value, destName: selected.name}); }}>
