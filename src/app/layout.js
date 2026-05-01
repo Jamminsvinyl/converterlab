@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   metadataBase: new URL('https://converterlab.io'),
-  title: "ConverterLab | 23+ Private Tools for Devs, Producers & Game Creators",
+  title: "ConverterLab | Private Tools for Devs, Producers & Game Creators",
   description: "100% browser-side, secure tool station. No data ever leaves your computer.",
   openGraph: {
     title: "ConverterLab - The Analog Heart of Digital Tools",
