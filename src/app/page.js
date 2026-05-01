@@ -17,7 +17,7 @@ export default function Home() {
 
   const initLandedForm = {
     route: "GLOBAL", tradeType: "standard", freightMethod: "air", incoterm: "FOB", 
-    val: "", curr: "USD", cartons: "1", l: "", w: "", h: "", weight: "", 
+    val: "", curr: "USD", l: "", w: "", h: "", weight: "", 
     frRate: "", originFee: "", duty: "20", sct: "0", vat: "20", ins: "", extra: ""
   };
   const [landedForm, setLandedForm] = useState(initLandedForm);
@@ -50,24 +50,25 @@ export default function Home() {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     switch(type) {
-      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU (NİHAİ 2026 VERSİYONU)
+      // 🚢 GÜMRÜK VE LOJİSTİK MOTORU (NİHAİ BULK/PALET VERSİYONU)
       case 'landed-cost': {
         const val = parseFloat(landedForm.val);
         const l = parseFloat(landedForm.l), w = parseFloat(landedForm.w), h = parseFloat(landedForm.h);
-        const weightPerCtn = parseFloat(landedForm.weight);
-        const cartons = parseInt(landedForm.cartons) || 1;
+        const totalKg = parseFloat(landedForm.weight);
         
         const dutyRate = parseFloat(landedForm.duty) || 0;
         const sctRate = parseFloat(landedForm.sct) || 0;
         const vatRate = parseFloat(landedForm.vat) || 0;
 
-        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(weightPerCtn)) {
-          setOutput("⚠️ ERROR: Goods Value, Box Dimensions (L,W,H), and Weight per Carton are mandatory fields.");
+        if (isNaN(val) || isNaN(l) || isNaN(w) || isNaN(h) || isNaN(totalKg)) {
+          setOutput("⚠️ ERROR: Total Goods Value, Total Box Dimensions (L,W,H), and Total Weight are mandatory fields.");
           return;
         }
 
-        const totalKg = weightPerCtn * cartons;
-        const totalCBM = (l * w * h * cartons) / 1000000;
+        const totalCBM = (l * w * h) / 1000000;
+        const euroPalletArea = 120 * 80; 
+        const cargoArea = l * w;
+        const estimatedPallets = Math.ceil(cargoArea / euroPalletArea);
         
         let chargeableWt = 0;
         let chargeableUnit = "";
@@ -77,7 +78,7 @@ export default function Home() {
         let defaultFrRate = 0;
 
         if (landedForm.freightMethod === "air") {
-            volKg = (l * w * h * cartons) / 5000;
+            volKg = (l * w * h) / 5000;
             chargeableWt = Math.max(totalKg, volKg);
             chargeableUnit = "kg";
             transitDays = "1 - 5 Days"; dispatchNote = "AWB cutoff is usually 24-48h prior to flight.";
@@ -86,7 +87,7 @@ export default function Home() {
             else if (landedForm.route === "CN_TR") defaultFrRate = 8.0;
             else defaultFrRate = 5.0;
         } else if (landedForm.freightMethod === "road") {
-            volKg = (l * w * h * cartons) / 3000;
+            volKg = (l * w * h) / 3000;
             chargeableWt = Math.max(totalKg, volKg);
             chargeableUnit = "kg";
             transitDays = "7 - 14 Days"; dispatchNote = "CMR requires booking 2-3 days in advance.";
@@ -185,7 +186,8 @@ export default function Home() {
           `📦 LOGISTICS & FREIGHT (Method: ${landedForm.freightMethod.toUpperCase()})\n` +
           `Route         : ${landedForm.route.replace('_', ' ➡️ ')}\n` +
           `Est. Transit  : ${transitDays}\n` +
-          `Cartons       : ${cartons} (Dims: ${l}x${w}x${h} cm)\n` +
+          `Total Dims    : ${l}x${w}x${h} cm\n` +
+          `Pallet Est.   : ~${estimatedPallets} Euro Pallet(s) (120x80cm footprint)\n` +
           `Total Weight  : ${totalKg.toFixed(2)} kg\n` + volumeText +
           `Freight Cost  : ${landedForm.incoterm === "CIF" ? "Included in Invoice" : fmt(freightCost) + " (" + fmt(frRate) + "/" + chargeableUnit + ")"}\n` +
           (landedForm.incoterm === "EXW" ? `Origin Fees   : ${fmt(originFee)}\n` : "") + `\n` +
@@ -454,7 +456,7 @@ export default function Home() {
   const toolData = {
     // 💼 BİZNES & DATA
     "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Incoterm. Enter Val/Dims. Blank fields will auto-estimate.", why: "AI-assisted broker simulator for EXW/FOB/CIF, W/M CBM Sea rules, and 2026 B2C taxes." },
+    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Incoterm. Enter Total Value/Dims. Blank fields auto-estimate.", why: "AI-assisted broker simulator for EXW/FOB/CIF, W/M Sea rules, and 2026 B2C taxes." },
     
     // 💻 GELİŞTİRİCİ
     "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Rapid data integration and database parsing." },
@@ -537,7 +539,7 @@ export default function Home() {
             {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "note-freq", "bpm-ms", "freq-note", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6">
                 
-                {/* 🚢 GLOBAL LANDED COST UI - MASTER SEVİYE */}
+                {/* 🚢 GLOBAL LANDED COST UI - TO-THE-POINT VERSİYON */}
                 {activeTab === "landed-cost" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
@@ -576,10 +578,10 @@ export default function Home() {
                       <p className="text-[10px] text-emerald-600/70 mt-1 ml-2">Incoterm (CIF Basis)</p>
                     </div>
 
-                    {/* SATIR 2: FİYAT VE KİLO */}
+                    {/* SATIR 2: FİYAT VE KİLO (CARTON KALKTI) */}
                     <div className="md:col-span-2 flex gap-2">
                       <div className="flex-1">
-                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Invoice Goods Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
+                        <input value={landedForm.val} type="number" min="0" step="any" placeholder="Total Invoice Value *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, val: e.target.value})} />
                         <p className="text-[10px] text-neutral-500 mt-1 ml-2">Total item value (Req)</p>
                       </div>
                       <div>
@@ -588,28 +590,24 @@ export default function Home() {
                         </select>
                       </div>
                     </div>
-                    <div>
-                      <input value={landedForm.cartons} type="number" min="1" step="1" placeholder="Total Cartons" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, cartons: e.target.value})} />
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Qty multiplier (Def: 1)</p>
-                    </div>
-                    <div>
-                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Wt/Ctn (kg) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
-                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Weight per carton (Req)</p>
+                    <div className="md:col-span-2">
+                      <input value={landedForm.weight} type="number" min="0" step="any" placeholder="Total Gross Wt (kg) *" className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500" onChange={(e) => setLandedForm({...landedForm, weight: e.target.value})} />
+                      <p className="text-[10px] text-neutral-500 mt-1 ml-2">Total combined weight (Req)</p>
                     </div>
 
-                    {/* SATIR 3: EBATLAR VE NAKLİYE GİRDİLERİ */}
+                    {/* SATIR 3: TOTAL EBATLAR VE NAKLİYE GİRDİLERİ */}
                     <div className="md:col-span-1 lg:col-span-2 grid grid-cols-3 gap-2">
                         <div>
-                          <input value={landedForm.l} type="number" min="0" step="any" placeholder="L(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
-                          <p className="text-[9px] text-neutral-600 text-center mt-1">Length</p>
+                          <input value={landedForm.l} type="number" min="0" step="any" placeholder="Total L*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, l: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Length(cm)</p>
                         </div>
                         <div>
-                          <input value={landedForm.w} type="number" min="0" step="any" placeholder="W(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
-                          <p className="text-[9px] text-neutral-600 text-center mt-1">Width</p>
+                          <input value={landedForm.w} type="number" min="0" step="any" placeholder="Total W*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, w: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Width(cm)</p>
                         </div>
                         <div>
-                          <input value={landedForm.h} type="number" min="0" step="any" placeholder="H(cm)*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
-                          <p className="text-[9px] text-neutral-600 text-center mt-1">Height</p>
+                          <input value={landedForm.h} type="number" min="0" step="any" placeholder="Total H*" className="w-full bg-black border border-neutral-800 rounded-xl px-2 py-4 text-sm font-mono text-emerald-400 outline-none focus:border-emerald-500 text-center" onChange={(e) => setLandedForm({...landedForm, h: e.target.value})} />
+                          <p className="text-[9px] text-neutral-600 text-center mt-1">Height(cm)</p>
                         </div>
                     </div>
                     <div>
