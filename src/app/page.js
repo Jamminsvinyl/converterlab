@@ -153,16 +153,53 @@ export default function Home() {
 
       // 💻 DEV TOOLS
       case 'json-csv': {
-        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
-        try {
-            let data = JSON.parse(input); if (!Array.isArray(data)) data = [data]; if (data.length === 0) { setOutput("Empty Array."); return; }
-            const keys = Object.keys(data[0]); let csvStr = keys.join(",") + "\n";
-            data.forEach(row => { csvStr += keys.map(k => { let cell = row[k] === null || row[k] === undefined ? "" : String(row[k]); return `"${cell.replace(/"/g, '""')}"`; }).join(",") + "\n"; });
-            setOutput(csvStr);
-        } catch(err) { setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message); }
-        break;
+  if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
+  try {
+    let data = JSON.parse(input);
+
+    // 1. Otomatik Paket Açma (Unwrapping)
+    // Eğer root bir obje ise ve içinde tek bir array varsa (örn: {"employees": [...]}), o array'e odaklan.
+    if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
+      const keys = Object.keys(data);
+      if (keys.length === 1 && Array.isArray(data[keys[0]])) {
+        data = data[keys[0]];
+      } else {
+        data = [data]; // Tekil objeyi listeye çevir
       }
-      case 'jwt-decoder': {
+    }
+
+    if (data.length === 0) { setOutput("Empty Array."); return; }
+
+    // 2. Başlıkları Çıkar
+    const keys = Object.keys(data[0]);
+    let csvStr = keys.join(",") + "\n";
+
+    // 3. Satırları İşle
+    data.forEach(row => {
+      csvStr += keys.map(k => {
+        let val = row[k];
+        let cell = "";
+
+        if (val === null || val === undefined) {
+          cell = "";
+        } else if (typeof val === 'object') {
+          // İç içe objeleri [object Object] yapmak yerine JSON olarak metne çevir
+          cell = JSON.stringify(val);
+        } else {
+          cell = String(val);
+        }
+
+        // CSV formatı için tırnak işaretlerini düzelt
+        return `"${cell.replace(/"/g, '""')}"`;
+      }).join(",") + "\n";
+    });
+
+    setOutput(csvStr);
+  } catch (err) {
+    setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message);
+  }
+  break;
+}      case 'jwt-decoder': {
         if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a JWT."); return; }
         try {
             const parts = input.split('.'); if(parts.length !== 3) throw new Error("A JWT must have exactly 3 parts separated by dots.");
