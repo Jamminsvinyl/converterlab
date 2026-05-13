@@ -35,16 +35,34 @@ export default function Home() {
     { name: "🇯🇵 JP - Tokyo", val: "1.6" }
   ];
 
+  // Mobil menü scroll kilidi
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? "hidden" : "unset";
   }, [isMenuOpen]);
 
+  // Döviz kurlarını çekme
   useEffect(() => {
     fetch("https://open.er-api.com/v6/latest/USD")
       .then((res) => res.json())
       .then((data) => { if (data && data.rates) setExchangeRates(data.rates); })
       .catch(() => console.log("Offline mode: Using default rates."));
   }, []);
+
+  // Dinamik SEO: Sekme değiştikçe sayfa başlığını ve description'ı tarayıcıya bildir
+  useEffect(() => {
+    if (toolData[activeTab]) {
+      document.title = `${toolData[activeTab].name} | ConverterLab Dev Tools`;
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute("content", toolData[activeTab].why);
+      } else {
+        const meta = document.createElement('meta');
+        meta.name = "description";
+        meta.content = toolData[activeTab].why;
+        document.head.appendChild(meta);
+      }
+    }
+  }, [activeTab]);
 
   const calculateLogic = (type) => {
     const keysSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -116,7 +134,7 @@ export default function Home() {
         } else if (landedForm.incoterm === "FOB") {
             originFee = 0; cif = val + freightCost + insAmt; incotermNote = "* FOB selected: Origin charges are paid by shipper. Freight & Insurance added to CIF.\n";
         } else if (landedForm.incoterm === "EXW") {
-            cif = val + originFee + freightCost + insAmt; incotermNote = "* EXW selected: Buyer pays all. Origin charges, Freight, and Insurance added to CIF.\n";
+            originFee = 0; cif = val + originFee + freightCost + insAmt; incotermNote = "* EXW selected: Buyer pays all. Origin charges, Freight, and Insurance added to CIF.\n";
         }
 
         const dutyAmt = cif * (dutyRate / 100); const sctAmt = (cif + dutyAmt) * (sctRate / 100);
@@ -153,53 +171,46 @@ export default function Home() {
 
       // 💻 DEV TOOLS
       case 'json-csv': {
-  if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
-  try {
-    let data = JSON.parse(input);
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a valid JSON array."); return; }
+        try {
+          let data = JSON.parse(input);
 
-    // 1. Otomatik Paket Açma (Unwrapping)
-    // Eğer root bir obje ise ve içinde tek bir array varsa (örn: {"employees": [...]}), o array'e odaklan.
-    if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
-      const keys = Object.keys(data);
-      if (keys.length === 1 && Array.isArray(data[keys[0]])) {
-        data = data[keys[0]];
-      } else {
-        data = [data]; // Tekil objeyi listeye çevir
-      }
-    }
+          if (!Array.isArray(data) && typeof data === 'object' && data !== null) {
+            const keys = Object.keys(data);
+            if (keys.length === 1 && Array.isArray(data[keys[0]])) {
+              data = data[keys[0]];
+            } else {
+              data = [data]; 
+            }
+          }
 
-    if (data.length === 0) { setOutput("Empty Array."); return; }
+          if (data.length === 0) { setOutput("Empty Array."); return; }
 
-    // 2. Başlıkları Çıkar
-    const keys = Object.keys(data[0]);
-    let csvStr = keys.join(",") + "\n";
+          const keys = Object.keys(data[0]);
+          let csvStr = keys.join(",") + "\n";
 
-    // 3. Satırları İşle
-    data.forEach(row => {
-      csvStr += keys.map(k => {
-        let val = row[k];
-        let cell = "";
+          data.forEach(row => {
+            csvStr += keys.map(k => {
+              let val = row[k];
+              let cell = "";
+              if (val === null || val === undefined) {
+                cell = "";
+              } else if (typeof val === 'object') {
+                cell = JSON.stringify(val);
+              } else {
+                cell = String(val);
+              }
+              return `"${cell.replace(/"/g, '""')}"`;
+            }).join(",") + "\n";
+          });
 
-        if (val === null || val === undefined) {
-          cell = "";
-        } else if (typeof val === 'object') {
-          // İç içe objeleri [object Object] yapmak yerine JSON olarak metne çevir
-          cell = JSON.stringify(val);
-        } else {
-          cell = String(val);
+          setOutput(csvStr);
+        } catch (err) {
+          setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message);
         }
-
-        // CSV formatı için tırnak işaretlerini düzelt
-        return `"${cell.replace(/"/g, '""')}"`;
-      }).join(",") + "\n";
-    });
-
-    setOutput(csvStr);
-  } catch (err) {
-    setOutput("⚠️ ERROR: Invalid JSON format.\n" + err.message);
-  }
-  break;
-}      case 'jwt-decoder': {
+        break;
+      }      
+      case 'jwt-decoder': {
         if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a JWT."); return; }
         try {
             const parts = input.split('.'); if(parts.length !== 3) throw new Error("A JWT must have exactly 3 parts separated by dots.");
@@ -236,6 +247,25 @@ export default function Home() {
         if(changes === 0) setOutput("✅ Texts are 100% identical."); else setOutput(`⚠️ FOUND ${changes} LINE DIFFERENCE(S)\n==========================================\n\n${diffOut}`);
         break;
       }
+      // AZER İLHAMLI YENİ ARAÇLAR
+      case 'hex-rgb': {
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste a HEX color."); return; }
+        let hex = input.replace('#', '').trim();
+        if(hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        if(hex.length !== 6 || !/^[0-9A-Fa-f]{6}$/.test(hex)) { setOutput("⚠️ ERROR: Invalid HEX format. Use e.g., #10B981"); return; }
+        let r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+        setOutput(`🎨 COLOR CONVERSION\n==========================================\nOriginal HEX : #${hex.toUpperCase()}\n\n--- RESULTS ---\nRGB Format   : rgb(${r}, ${g}, ${b})\n\nCSS Ready:\ncolor: rgb(${r}, ${g}, ${b});\nbackground-color: rgb(${r}, ${g}, ${b});`);
+        break;
+      }
+      case 'rgb-hex': {
+        if (!input.trim()) { setOutput("⚠️ ERROR: Please paste RGB values."); return; }
+        let rgbStr = input.replace(/[^\d,]/g, '');
+        let rgbArr = rgbStr.split(',');
+        if(rgbArr.length !== 3) { setOutput("⚠️ ERROR: Invalid RGB format. Use e.g., 16, 185, 129"); return; }
+        let hexOut = "#" + rgbArr.map(x => { let h = parseInt(x).toString(16); return h.length === 1 ? "0" + h : h; }).join('');
+        setOutput(`🎨 COLOR CONVERSION\n==========================================\nOriginal RGB : ${rgbArr.join(', ')}\n\n--- RESULTS ---\nHEX Format   : ${hexOut.toUpperCase()}\n\nCSS Ready:\ncolor: ${hexOut.toUpperCase()};\nbackground-color: ${hexOut.toUpperCase()};`);
+        break;
+      }
 
       // 🎮 GAME DEV
       case 'pixel-perfect': {
@@ -270,7 +300,7 @@ export default function Home() {
         break;
       }
 
-      // 🎶 MÜZİK MOTORLARI (NİHAİ PRO SEVİYE)
+      // 🎶 MÜZİK MOTORLARI
       case 'circle-fifths': {
         const query = input.trim();
         if (!query) { setOutput("⚠️ ERROR: Please enter a Key (e.g., C Major, F# Minor)."); return; }
@@ -346,7 +376,7 @@ export default function Home() {
             noteStr = `${keysSharp[midi % 12]}${Math.floor(midi / 12) - 1}`;
         }
 
-        const wavelength = 343 / hz; // meters
+        const wavelength = 343 / hz;
 
         setOutput(`🎛️ ADVANCED TUNING & HARMONICS\n==========================================\nInput Detected  : ${isNoteInput ? 'Musical Note' : 'Frequency (Hz)'}\nA4 Reference    : ${refA4} Hz\n\n--- PRIMARY RESULTS ---\nExact Frequency : ${hz.toFixed(2)} Hz\nClosest Note    : ${noteStr} (MIDI: ${midi})\nDetune (Cents)  : ${isNoteInput ? '0 (Perfect Pitch)' : (detuneCents > 0 ? '+'+detuneCents : detuneCents)}\n\n--- ACOUSTIC PHYSICS ---\nWavelength      : ${wavelength.toFixed(3)} meters\n1st Overtone    : ${(hz * 2).toFixed(2)} Hz (Octave)\n2nd Overtone    : ${(hz * 3).toFixed(2)} Hz (Perfect 5th)\n3rd Overtone    : ${(hz * 4).toFixed(2)} Hz (Double Octave)`);
         break;
@@ -356,7 +386,7 @@ export default function Home() {
         const bpm = parseFloat(input);
         if(isNaN(bpm) || bpm <= 0 || bpm > 999) { setOutput("⚠️ ERROR: BPM must be a positive number."); return; }
         
-        const qMs = 60000 / bpm; // 1/4
+        const qMs = 60000 / bpm;
         const calc = (mult) => {
             const ms = qMs * mult;
             const hz = 1000 / ms;
@@ -364,22 +394,7 @@ export default function Home() {
         };
 
         setOutput(
-          `🎛️ PRO DELAY & LFO TIME CALCULATOR\n` +
-          `==========================================\n` +
-          `Target Tempo : ${bpm} BPM\n\n` +
-          `--- STRAIGHT NOTES ---\n` +
-          `1/2 (Half)    : ${calc(2)}\n` +
-          `1/4 (Quarter) : ${calc(1)}\n` +
-          `1/8 (Eighth)  : ${calc(0.5)}\n` +
-          `1/16 (Sixtn.) : ${calc(0.25)}\n\n` +
-          `--- DOTTED NOTES (1.5x) ---\n` +
-          `1/4 Dotted    : ${calc(1.5)}\n` +
-          `1/8 Dotted    : ${calc(0.75)}\n` +
-          `1/16 Dotted   : ${calc(0.375)}\n\n` +
-          `--- TRIPLETS (0.66x) ---\n` +
-          `1/4 Triplet   : ${calc(0.6666)}\n` +
-          `1/8 Triplet   : ${calc(0.3333)}\n` +
-          `1/16 Triplet  : ${calc(0.1666)}`
+          `🎛️ PRO DELAY & LFO TIME CALCULATOR\n==========================================\nTarget Tempo : ${bpm} BPM\n\n--- STRAIGHT NOTES ---\n1/2 (Half)    : ${calc(2)}\n1/4 (Quarter) : ${calc(1)}\n1/8 (Eighth)  : ${calc(0.5)}\n1/16 (Sixtn.) : ${calc(0.25)}\n\n--- DOTTED NOTES (1.5x) ---\n1/4 Dotted    : ${calc(1.5)}\n1/8 Dotted    : ${calc(0.75)}\n1/16 Dotted   : ${calc(0.375)}\n\n--- TRIPLETS (0.66x) ---\n1/4 Triplet   : ${calc(0.6666)}\n1/8 Triplet   : ${calc(0.3333)}\n1/16 Triplet  : ${calc(0.1666)}`
         );
         break;
       }
@@ -410,7 +425,6 @@ export default function Home() {
         }
         const area = 2 * (acW * acL + acL * acH + acW * acH);
         
-        // Axial Room Modes Calculation (343 m/s sound speed)
         const speedOfSound = 343;
         const modeL = speedOfSound / (2 * acL);
         const modeW = speedOfSound / (2 * acW);
@@ -428,27 +442,29 @@ export default function Home() {
 
   const toolData = {
     // 💼 BİZNES & DATA
-    "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations." },
-    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Incoterm. Enter Total Value/Dims. Blank fields auto-estimate.", why: "AI-assisted broker simulator for EXW/FOB/CIF, W/M Sea rules, and 2026 B2C taxes." },
+    "travel-calc": { name: "Travel Expense Engine", how: "Select options from dropdowns. Range: 1-365 Days.", why: "Instant, algorithm-based corporate travel budget estimations without server-side processing." },
+    "landed-cost": { name: "Global Landed Cost", how: "Select Route/Incoterm. Enter Total Value/Dims. Blank fields auto-estimate.", why: "AI-assisted broker simulator for EXW/FOB/CIF logistics, W/M Sea rules, and custom B2C taxes." },
     
     // 💻 GELİŞTİRİCİ
-    "json-csv": { name: "JSON to CSV", how: "Paste raw JSON array text.", why: "Rapid data integration and database parsing." },
-    "curl-code": { name: "cURL to Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and JS code conversion." },
-    "jwt-decoder": { name: "JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused token decoding. No server calls are made." },
-    "sql-format": { name: "SQL Formatter", how: "Paste unformatted SQL queries.", why: "Enhances query readability and standardizes formatting." },
-    "diff-checker": { name: "Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control and code comparison." },
+    "json-csv": { name: "JSON to CSV Converter", how: "Paste raw JSON array text.", why: "Rapid JSON data integration, auto-unwrapping, and secure database parsing directly in your browser." },
+    "curl-code": { name: "cURL to JS Fetch Code", how: "Paste a cURL request from terminal/postman.", why: "Instant API endpoint testing and automatic JavaScript fetch code conversion." },
+    "jwt-decoder": { name: "Secure JWT Decoder", how: "Paste encoded JWT string.", why: "Privacy-focused token decoding. Verifies structure securely because no external server calls are ever made." },
+    "sql-format": { name: "SQL Query Formatter", how: "Paste unformatted SQL queries.", why: "Enhances database query readability, fixes spaghetti SQL, and standardizes code formatting instantly." },
+    "diff-checker": { name: "Code Diff Checker", how: "Paste Original text (left) & New text (right).", why: "Immediate version control, line-by-line comparison, and text difference identification." },
+    "hex-rgb": { name: "HEX to RGB Converter", how: "Paste HEX color (e.g. #10B981)", why: "Instantly converts web color HEX codes to RGB format and provides ready-to-use CSS syntax snippets." },
+    "rgb-hex": { name: "RGB to HEX Converter", how: "Paste RGB values (e.g. 16, 185, 129)", why: "Instantly converts pure RGB values to standard HEX codes for consistent frontend UI/UX color styling." },
     
     // 🎶 MÜZİK LAB
-    "circle-fifths": { name: "Interactive Circle of Fifths", how: "Enter Key (e.g. C Major, F# minor)", why: "Instantly maps diatonic chords, relative keys, and harmonic structure." },
-    "tuning-harmonics": { name: "Tuning & Harmonics", how: "Enter Freq (e.g. 440) OR Note (e.g. C4)", why: "Calculates detune cents, acoustic wavelength, and harmonic overtones." },
-    "delay-lfo": { name: "Pro Delay & LFO", how: "Enter track tempo (e.g. 120)", why: "Provides straight, dotted, and triplet ms timings + LFO Hz rates." },
-    "pitch-shift": { name: "Sample Repitch Engine", how: "Enter Original BPM & Target BPM", why: "Calculates the exact transpose semitones needed to sync turntable/samples." },
-    "acoustic-calc": { name: "Acoustic Room Engineer", how: "Enter W/L. Leave Height blank for 2.8m standard.", why: "Calculates Axial Room Modes (Standing Waves) and acoustic panel requirements." },
+    "circle-fifths": { name: "Interactive Circle of Fifths", how: "Enter Key (e.g. C Major, F# minor)", why: "Instantly maps diatonic chords, relative keys, and harmonic scale structures for composers and producers." },
+    "tuning-harmonics": { name: "Tuning & Harmonics Calc", how: "Enter Freq (e.g. 440) OR Note (e.g. C4)", why: "Calculates precise detune cents, acoustic wavelength, and harmonic overtones based on pure acoustic physics." },
+    "delay-lfo": { name: "Pro Delay & LFO Timings", how: "Enter track tempo (e.g. 120)", why: "Provides straight, dotted, and triplet millisecond (ms) timings plus LFO Hz rates synced to BPM." },
+    "pitch-shift": { name: "Sample Repitch Engine", how: "Enter Original BPM & Target BPM", why: "Calculates the exact transpose semitones needed to pitch-shift and sync turntable samples flawlessly." },
+    "acoustic-calc": { name: "Acoustic Room Engineer", how: "Enter W/L. Leave Height blank for 2.8m standard.", why: "Calculates Axial Room Modes (Standing Waves) and precise acoustic panel requirements for studio treatment." },
     
     // 🎮 GAME DEV (PREMIUM)
-    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing to prevent UI stretching on ultrawide screens." },
-    "shader-easing": { name: "Shader Easing Vis", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math curves (Smoothstep, Pow) for smooth animations." },
-    "dot-product": { name: "Vector Dot Product", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates shader lighting math based on surface normals." }
+    "pixel-perfect": { name: "Pixel UI Scaler", how: "Enter Base W/H and Target Ratio (e.g. 21:9).", why: "Calculates letterboxing math to prevent game UI stretching or distortion on ultrawide monitors." },
+    "shader-easing": { name: "Shader Easing Visualizer", how: "Select function & enter X (0.0 to 1.0).", why: "Instantly test math easing curves (Smoothstep, Pow) for smooth UI animations and shader logic." },
+    "dot-product": { name: "Vector Dot Product Calc", how: "Enter Surface Angle & Light Angle (Degrees).", why: "Simulates complex shader lighting math and shadow calculations based on surface normal vectors." }
   };
 
   const NavGroup = ({ title, items }) => (
@@ -472,6 +488,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-200 font-sans selection:bg-emerald-500/30">
       
+      {/* Statik SEO Fallback for Bots */}
+      <title>ConverterLab | Zero-Bloat Developer & Audio Physics Tools</title>
+      <meta name="description" content="Secure, client-side utilities for developers, audio engineers, and logistics. No data tracking. Pure vanilla performance." />
+      
       <aside className="w-64 border-r border-neutral-800 bg-neutral-900/50 hidden md:flex flex-col h-screen sticky top-0 px-4">
         <div className="py-8 px-4 border-b border-neutral-800 mb-4 flex items-center">
             <h1 className="text-xl font-bold text-white tracking-tighter italic">Converter<span className="text-emerald-500">Lab</span></h1>
@@ -481,7 +501,7 @@ export default function Home() {
         </div>
         <div className="flex-1 overflow-y-auto pb-8 scrollbar-hide">
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost"]} />
-          <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker"]} />
+          <NavGroup title="Developer Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker", "hex-rgb", "rgb-hex"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "tuning-harmonics", "delay-lfo", "pitch-shift", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
@@ -497,7 +517,7 @@ export default function Home() {
             {Object.keys(toolData).length} PREMIUM TOOLS
           </div>
           <NavGroup title="Business & Data" items={["travel-calc", "landed-cost"]} />
-          <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker"]} />
+          <NavGroup title="Dev Tools" items={["json-csv", "curl-code", "jwt-decoder", "sql-format", "diff-checker", "hex-rgb", "rgb-hex"]} />
           <NavGroup title="Music Lab" items={["circle-fifths", "tuning-harmonics", "delay-lfo", "pitch-shift", "acoustic-calc"]} />
           <NavGroup title="Game Dev" items={["pixel-perfect", "shader-easing", "dot-product"]} />
         </div>
@@ -519,14 +539,12 @@ export default function Home() {
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-8 shadow-2xl mb-8 relative overflow-hidden">
             
-            {/* CIRCLE OF FIFTHS BACKGROUND VISUAL */}
             {activeTab === "circle-fifths" && (
                 <div className="flex justify-center mb-8">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/3/33/Circle_of_fifths_deluxe_4.svg" alt="Circle of Fifths Reference" className="w-48 h-48 md:w-64 md:h-64 opacity-50 contrast-125 saturate-0 drop-shadow-2xl" />
                 </div>
             )}
 
-            {/* MÜZİK MOTORLARININ EKSİK UI ZİNCİRİ BURADA TAMAMLANDI */}
             {["travel-calc", "landed-cost", "acoustic-calc", "circle-fifths", "pitch-shift", "tuning-harmonics", "delay-lfo", "pixel-perfect", "shader-easing", "dot-product"].includes(activeTab) ? (
               <div className="space-y-6 relative z-10">
                 
